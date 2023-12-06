@@ -42,7 +42,7 @@ setup(
         "rpdk.v1.extensions": [
             "describeHook = hooks_extension.describe_hook:DescribeHookExtension",
             "configureHook = hooks_extension.configure_hook:ConfigureHookExtension",
-            "setDefaultHook = hooks_extension.set_default_hook:SetDefaultHookExtension",
+            "setDefaultHook = hooks_extension.set_default_hook_version:SetDefaultHookVersionExtension",
         ],
     }
     # license="Apache License 2.0",
