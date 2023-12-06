@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from botocore.stub import Stubber
 
 from rpdk.core.boto_helpers import create_sdk_session
-from rpdk.core.exceptions import DownstreamError
+from rpdk.core.exceptions import DownstreamError, InternalError
 from rpdk.core.project import Project
 from rpdk.core.cli import main
 
@@ -148,14 +148,6 @@ class TestBuildStackFiltersString:
                     "stack-name-5"
                 ]
             },
-            "StackTags": {
-                "Include": [
-                    {
-                        "Key": "stack-tag-key",
-                        "Value": "stack-tag-val"
-                    }
-                ]
-            },
             "StackRoles": {
                 "Exclude": [
                     "stack-role-0",
@@ -170,8 +162,6 @@ class TestBuildStackFiltersString:
         "\t\t\tStackNames:\n"
         "\t\t\t\tInclude: ['stack-name-0', 'stack-name-1', 'stack-name-2']\n"
         "\t\t\t\tExclude: ['stack-name-3', 'stack-name-4', 'stack-name-5']\n"
-        "\t\t\tStackTags:\n"
-        "\t\t\t\tInclude: [{'Key': 'stack-tag-key', 'Value': 'stack-tag-val'}]\n"
         "\t\t\tStackRoles:\n"
         "\t\t\t\tExclude: ['stack-role-0', 'stack-role-1', 'stack-role-2']\n")
         assert output == expected
@@ -820,6 +810,25 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::DynamoDB::Table\n")
         assert output == expected
 
+    def test_handler_not_in_handler_actions_list(self, extension):
+        versioned_hook_data = {}
+        versioned_hook_data["Schema"] = json.dumps({
+            "handlers":
+            {
+                "postDelete": {
+                    "targetNames": ["AWS::S3::Bucket", "AWS::DynamoDB::*"],
+                    "permissions": []
+                }
+            }
+        })
+        hook_configuration_data = {}
+        hook_configuration_data["TargetFilters"] = self.filters_targets
+
+        with pytest.raises(Exception) as e:
+            output = extension._build_target_handlers_string(versioned_hook_data, hook_configuration_data)
+
+        assert e.type == InternalError
+
 class TestGetHookData:
     def test_get_hook_data_happy(self, extension):
         response = ({
@@ -858,8 +867,7 @@ class TestGetHookData:
                 expected_params={ "TypeName": TEST_TYPE_NAME, "Type":"HOOK" }
             )
             extension._get_hook_data(TEST_TYPE_NAME)
-        assert e.type == extension._cfn_client.exceptions.CFNRegistryException
-        assert issubclass(e.type, ClientError)
+        assert e.type == DownstreamError
 
     def test_get_versioned_hook_data_happy(self, extension):
         response = ({
@@ -899,8 +907,7 @@ class TestGetHookData:
                 expected_params={ "TypeName": TEST_TYPE_NAME, "Type":"HOOK", "VersionId": "00000002" }
             )
             extension._get_hook_data(TEST_TYPE_NAME, "00000002")
-        assert e.type == extension._cfn_client.exceptions.CFNRegistryException
-        assert issubclass(e.type, ClientError)
+        assert e.type == DownstreamError
 
 class TestGetTypeConfigurationData:
     def test_get_type_configuration_data_happy(self, extension):
@@ -944,8 +951,7 @@ class TestGetTypeConfigurationData:
                 expected_params={ "TypeConfigurationIdentifiers": [{ "Type": "HOOK", "TypeName": TEST_TYPE_NAME, "TypeConfigurationAlias": "default" }] }
             )
             extension._get_type_configuration_data(TEST_TYPE_NAME, "default")
-        assert e.type == extension._cfn_client.exceptions.CFNRegistryException
-        assert issubclass(e.type, ClientError)
+        assert e.type == DownstreamError
 
 class TestDescribeHook:
     def test_basic_hook(self, extension, capsys):

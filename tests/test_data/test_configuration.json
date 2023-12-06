@@ -1,0 +1,34 @@
+{
+    "CloudFormationConfiguration": {
+        "HookConfiguration": {
+            "TargetStacks": "ALL",
+            "StackFilters": {
+                "FilteringCriteria": "ANY",
+                "StackNames": {
+                    "Include": [
+                        "stack-name-0",
+                        "stack-name-1",
+                        "stack-name-2"
+                    ],
+                    "Exclude": [
+                        "stack-name-3",
+                        "stack-name-4",
+                        "stack-name-5"
+                    ]
+                },
+                "StackRoles": {
+                    "Exclude": [
+                        "arn:aws:iam::123456789012:role/stack-role-0",
+                        "arn:aws:iam::123456789012:role/stack-role-1",
+                        "arn:aws:iam::123456789012:role/stack-role-2"
+                    ]
+                }
+            },
+            "FailureMode": "WARN",
+            "Properties": {
+                "minQueues": "2",
+                "minBuckets": "3"
+            }
+        }
+    }
+}

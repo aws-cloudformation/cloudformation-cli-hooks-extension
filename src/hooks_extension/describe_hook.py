@@ -11,18 +11,17 @@ from rpdk.core.exceptions import DownstreamError, InternalError
 from rpdk.core.type_name_resolver import TypeNameResolver, contains_wildcard
 from rpdk.core.boto_helpers import create_sdk_session
 
-
-
 LOG = logging.getLogger(__name__)
+
+CLOUDFORMATION_CONFIGURATION_KEY = "CloudFormationConfiguration"
+HOOK_CONFIGURATION_KEY = "HookConfiguration"
+DESCRIBE_HOOK_COMMAND_NAME = "describe-hook"
 
 class DescribeHookExtension(ExtensionPlugin):
     """
     A class used for adding the 'describe-hook' command to the CFN CLI.
     """
-    COMMAND_NAME = "describe-hook"
-
-    CLOUDFORMATION_CONFIGURATION_KEY = "CloudFormationConfiguration"
-    HOOK_CONFIGURATION_KEY = "HookConfiguration"
+    COMMAND_NAME = DESCRIBE_HOOK_COMMAND_NAME
 
     _cfn_client = None
 
@@ -177,9 +176,8 @@ class DescribeHookExtension(ExtensionPlugin):
                 action, invocation_point = handler_names_to_actions[handler]
                 target_names_from_schema = handler_config["targetNames"]
             else:
-                msg = "Internal error (handler name in schema is invalid)"
-                LOG.error(msg)
-                raise InternalError(msg)
+                LOG.error("Internal error (handler name in schema is invalid)")
+                raise InternalError("Internal error (handler name in schema is invalid)")
             total_target_names = TypeNameResolver(self._cfn_client).resolve_type_names(target_names_from_schema)
             if has_filters:
                 total_target_names = list(filter(
@@ -229,7 +227,7 @@ class DescribeHookExtension(ExtensionPlugin):
             raise DownstreamError from e
         except ClientError as e:
             LOG.error("Describing type resulted in a ClientError", exc_info=e)
-            raise
+            raise DownstreamError from e
         return hook_data
 
     def _get_type_configuration_data(self, type_name: str, type_configuration_alias: str) -> dict:
@@ -252,7 +250,7 @@ class DescribeHookExtension(ExtensionPlugin):
             raise DownstreamError from e
         except ClientError as e:
             LOG.error("Describing type configuration resulted in a ClientError", exc_info=e)
-            raise
+            raise DownstreamError from e
         # Nested hook config is a string, converting to json here is necessary
         return json.loads(batch_describe_type_configurations_response["Configuration"])
 
@@ -267,7 +265,8 @@ class DescribeHookExtension(ExtensionPlugin):
 
         Returns:
             None.
-            Side effect: All information printed to system out.
+
+        Side effect: All information printed to system out.
         """
         DescribeHookExtension._cfn_client = create_sdk_session(args.region, args.profile).client("cloudformation", endpoint_url=args.endpoint_url)
         project = Project()
@@ -283,7 +282,7 @@ class DescribeHookExtension(ExtensionPlugin):
 
         versioned_hook_data = self._get_hook_data(type_name, version_id)
         type_configuration_data = self._get_type_configuration_data(type_name, "default")
-        hook_configuration_data = type_configuration_data[self.CLOUDFORMATION_CONFIGURATION_KEY][self.HOOK_CONFIGURATION_KEY]
+        hook_configuration_data = type_configuration_data[CLOUDFORMATION_CONFIGURATION_KEY][HOOK_CONFIGURATION_KEY]
 
         configured_properties_string = self._build_properties_string(hook_configuration_data)
         stack_filters_string = self._build_stack_filters_string(hook_configuration_data)
