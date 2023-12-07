@@ -22,7 +22,8 @@ class SetDefaultHookVersionExtension(ExtensionPlugin):
 
     def _set_type_default_version(self, type_name: str, version_id: str) -> None:
         """
-        Sets Hook default version by calling CloudFormation SetTypeDefaultVersion API with arguments. https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_SetTypeDefaultVersion.html
+        Sets Hook default version by calling CloudFormation SetTypeDefaultVersion API with arguments.
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_SetTypeDefaultVersion.html
 
         Parameters:
             type_name (string): The hook type name to call SetTypeDefaultVersion with.
@@ -33,14 +34,14 @@ class SetDefaultHookVersionExtension(ExtensionPlugin):
 
         Side effect: Hook default version will be updated in AWS account.
         """
-        LOG.debug(f"Calling SetTypeDefaultVersion for {type_name} version {version_id}")
+        LOG.debug("Calling SetTypeDefaultVersion for %s version %s", type_name, version_id)
         try:
             self._cfn_client.set_type_default_version(Type="HOOK", TypeName=type_name, VersionId=version_id)
+            LOG.debug("Successful response from SetTypeDefaultVersion")
         except self._cfn_client.exceptions.TypeNotFoundException as e:
-            LOG.error("Trying to set type default version resulted in TypeNotFoundException. You may need to publish the hook first using cfn submit.", exc_info=e)
-            raise DownstreamError from e
+            msg = "Trying to set type default version resulted in TypeNotFoundException. You may need to publish the hook first using cfn submit."
+            raise DownstreamError(msg) from e
         except ClientError as e:
-            LOG.error("Set type default version resulted in CFNRegistryException", exc_info=e)
             raise DownstreamError from e
 
     def _set_default_hook_version(self, args: Namespace) -> None:
@@ -48,7 +49,8 @@ class SetDefaultHookVersionExtension(ExtensionPlugin):
         Main method for the set-default-hook-version command. Uses version id to set the default hook version in AWS.
 
         Parameters:
-            args (Namespace): The arguments to use with this command. Required keys in Namespace: 'version_id', 'profile', 'endpoint_url', 'region'. All default to None.
+            args (Namespace): The arguments to use with this command.
+                Required keys in Namespace: 'version_id', 'profile', 'endpoint_url', 'region'. All default to None.
 
         Returns:
             None.

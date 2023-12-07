@@ -34,7 +34,8 @@ class DescribeHookExtension(ExtensionPlugin):
 
         Returns:
             string: Formatted string table of the configured properties and their values (or 'No configured properties.' if none are specified).
-                Table header row contains labels for 'Property' and 'Value'. Each property/value pair is printed on its own row. Spacing to and from column seperator is consistent.
+                Table header row contains labels for 'Property' and 'Value'. Each property/value pair is printed on its own row.
+                Spacing to and from column seperator is consistent.
 
         e.g.
 
@@ -176,7 +177,6 @@ class DescribeHookExtension(ExtensionPlugin):
                 action, invocation_point = handler_names_to_actions[handler]
                 target_names_from_schema = handler_config["targetNames"]
             else:
-                LOG.error("Internal error (handler name in schema is invalid)")
                 raise InternalError("Internal error (handler name in schema is invalid)")
             total_target_names = TypeNameResolver(self._cfn_client).resolve_type_names(target_names_from_schema)
             if has_filters:
@@ -206,7 +206,8 @@ class DescribeHookExtension(ExtensionPlugin):
 
     def _get_hook_data(self, type_name: str, version_id: str = None) -> dict:
         """
-        Gets Hook description by calling CloudFormation DescribeType API with arguments. https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeType.html
+        Gets Hook description by calling CloudFormation DescribeType API with arguments.
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeType.html
 
         Parameters:
             type_name (string): The hook type name to call DescribeType with.
@@ -217,22 +218,22 @@ class DescribeHookExtension(ExtensionPlugin):
         """
         try:
             if version_id is None:
-                LOG.debug("Calling DescribeType without version id to get default version id")
+                LOG.debug("Calling DescribeType for %s without version id to get default version id", type_name)
                 hook_data = self._cfn_client.describe_type(TypeName=type_name, Type="HOOK")
             else:
-                LOG.debug("Calling DescribeType with version id")
+                LOG.debug("Calling DescribeType for %s with version id %s", type_name, version_id)
                 hook_data = self._cfn_client.describe_type(TypeName=type_name, Type="HOOK", VersionId=version_id)
         except self._cfn_client.exceptions.TypeNotFoundException as e:
-            LOG.error("Describing type resulted in TypeNotFoundException. Have you registered this hook?", exc_info=e)
-            raise DownstreamError from e
+            msg = "Describing type resulted in TypeNotFoundException. Have you registered this hook?"
+            raise DownstreamError(msg) from e
         except ClientError as e:
-            LOG.error("Describing type resulted in a ClientError", exc_info=e)
             raise DownstreamError from e
         return hook_data
 
     def _get_type_configuration_data(self, type_name: str, type_configuration_alias: str) -> dict:
         """
-        Gets the Hook type configuration by caling CloudFormation BatchDescribeTypeConfigurations API with arguments. https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_BatchDescribeTypeConfigurations.html
+        Gets the Hook type configuration by caling CloudFormation BatchDescribeTypeConfigurations API with arguments.
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_BatchDescribeTypeConfigurations.html
 
         Parameters:
             type_name (string): The hook type name to use as a TypeConfigurationIdentifier when calling BatchDescribeTypeConfigurations.
@@ -241,18 +242,21 @@ class DescribeHookExtension(ExtensionPlugin):
         Returns:
             dict: The response from the BatchDescribeTypeConfigurations API.
         """
+        type_configuration_not_found_msg = "Describing type configuration resulted in TypeConfigurationNotFoundException. Have you set a type configuration for this hook?"
         try:
-            LOG.debug("Calling BatchDescribeTypeConfigurations")
+            LOG.debug("Calling BatchDescribeTypeConfigurations for %s and configuration alias %s", type_name, type_configuration_alias)
             batch_describe_type_configurations_response = self._cfn_client.batch_describe_type_configurations(
-                TypeConfigurationIdentifiers=[{"Type": "HOOK", "TypeName": type_name, "TypeConfigurationAlias": type_configuration_alias}])["TypeConfigurations"][0]
+                TypeConfigurationIdentifiers=[{"Type": "HOOK", "TypeName": type_name, "TypeConfigurationAlias": type_configuration_alias}])["TypeConfigurations"]
+            LOG.debug("Successful response from BatchDescribeTypeConfigurations")
         except self._cfn_client.exceptions.TypeConfigurationNotFoundException as e:
-            LOG.error("Describing type configuration resulted in TypeConfigurationNotFoundException. Have you set a type configuration for this hook?", exc_info=e)
-            raise DownstreamError from e
+            raise DownstreamError(type_configuration_not_found_msg) from e
         except ClientError as e:
-            LOG.error("Describing type configuration resulted in a ClientError", exc_info=e)
             raise DownstreamError from e
+        if not batch_describe_type_configurations_response:
+            raise DownstreamError(type_configuration_not_found_msg)
+
         # Nested hook config is a string, converting to json here is necessary
-        return json.loads(batch_describe_type_configurations_response["Configuration"])
+        return json.loads(batch_describe_type_configurations_response[0]["Configuration"])
 
     def _describe_hook(self, args: Namespace) -> None:
         """
@@ -261,7 +265,8 @@ class DescribeHookExtension(ExtensionPlugin):
         created at time, last updated time, targets, and testing status.
 
         Parameters:
-            args (Namespace): The arguments to use with this command. Required keys in Namespace: 'version_id', 'profile', 'endpoint_url', 'region'. All default to None.
+            args (Namespace): The arguments to use with this command.
+                Required keys in Namespace: 'version_id', 'profile', 'endpoint_url', 'region'. All default to None.
 
         Returns:
             None.
