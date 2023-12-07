@@ -953,6 +953,21 @@ class TestGetTypeConfigurationData:
             extension._get_type_configuration_data(TEST_TYPE_NAME, "default")
         assert e.type == DownstreamError
 
+    def test_get_type_configuration_data_no_configurations(self, extension):
+        response = ({
+            "Errors": [],
+            "UnprocessedTypeConfigurations": [],
+            "TypeConfigurations": []
+        })
+        with Stubber(extension._cfn_client) as stubber, pytest.raises(Exception) as e:
+            stubber.add_response(
+                "batch_describe_type_configurations",
+                response,
+                expected_params={ "TypeConfigurationIdentifiers": [{ "Type": "HOOK", "TypeName": TEST_TYPE_NAME, "TypeConfigurationAlias": "default" }] }
+            )
+            extension._get_type_configuration_data(TEST_TYPE_NAME, "default")
+        assert e.type == DownstreamError
+
 class TestDescribeHook:
     def test_basic_hook(self, extension, capsys):
         sample_timestamp = datetime(2023, 11, 7, 22, 23, 22, 485000, tzinfo=tzutc())
