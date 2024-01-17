@@ -42,7 +42,8 @@ class ConfigureHookExtension(ExtensionPlugin):
             LOG.debug("Successful response from SetTypeConfiguration")
             return response
         except self._cfn_client.exceptions.TypeNotFoundException as e:
-            msg = "Describing type resulted in TypeNotFoundException. Have you registered this hook?"
+            msg = "Setting type configuration resulted in TypeNotFoundException. Have you registered this hook first?"
+            print("\n" + msg)
             raise DownstreamError(msg) from e
         except ClientError as e:
             raise DownstreamError from e

@@ -39,7 +39,8 @@ class SetDefaultHookVersionExtension(ExtensionPlugin):
             self._cfn_client.set_type_default_version(Type="HOOK", TypeName=type_name, VersionId=version_id)
             LOG.debug("Successful response from SetTypeDefaultVersion")
         except self._cfn_client.exceptions.TypeNotFoundException as e:
-            msg = "Trying to set type default version resulted in TypeNotFoundException. You may need to publish the hook first using cfn submit."
+            msg = "Trying to set type default version resulted in TypeNotFoundException. You may need to register the hook first using `cfn submit`."
+            print("\n" + msg)
             raise DownstreamError(msg) from e
         except ClientError as e:
             raise DownstreamError from e

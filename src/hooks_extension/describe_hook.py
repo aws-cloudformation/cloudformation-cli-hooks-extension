@@ -224,7 +224,11 @@ class DescribeHookExtension(ExtensionPlugin):
                 LOG.debug("Calling DescribeType for %s with version id %s", type_name, version_id)
                 hook_data = self._cfn_client.describe_type(TypeName=type_name, Type="HOOK", VersionId=version_id)
         except self._cfn_client.exceptions.TypeNotFoundException as e:
-            msg = "Describing type resulted in TypeNotFoundException. Have you registered this hook?"
+            if version_id is None:
+                msg = "Describing type resulted in TypeNotFoundException. This type does not seem to exist in your account in this region. Have you registered this hook?"
+            else:
+                msg = f"Describing type with version id {version_id} resulted in TypeNotFoundException. This specific version does not seem to exist in your account in this region."
+            print("\n" + msg)
             raise DownstreamError(msg) from e
         except ClientError as e:
             raise DownstreamError from e
@@ -248,15 +252,25 @@ class DescribeHookExtension(ExtensionPlugin):
             batch_describe_type_configurations_response = self._cfn_client.batch_describe_type_configurations(
                 TypeConfigurationIdentifiers=[{"Type": "HOOK", "TypeName": type_name, "TypeConfigurationAlias": type_configuration_alias}])["TypeConfigurations"]
             LOG.debug("Successful response from BatchDescribeTypeConfigurations")
+            # Nested hook config is a string, converting to json here is necessary
+            data = json.loads(batch_describe_type_configurations_response[0]["Configuration"])
         except self._cfn_client.exceptions.TypeConfigurationNotFoundException as e:
+            print("\n" + type_configuration_not_found_msg)
             raise DownstreamError(type_configuration_not_found_msg) from e
         except ClientError as e:
             raise DownstreamError from e
-        if not batch_describe_type_configurations_response:
-            raise DownstreamError(type_configuration_not_found_msg)
+        except IndexError as e:
+            LOG.debug("No type configurations found. This likely means that an initial type configuration was never set. Using a substituted default type configuration", exc_info=e)
+            data = {
+                CLOUDFORMATION_CONFIGURATION_KEY: {
+                    HOOK_CONFIGURATION_KEY: {
+                        "FailureMode": "WARN",
+                        "TargetStacks": "NONE"
+                    }
+                }
+            }
 
-        # Nested hook config is a string, converting to json here is necessary
-        return json.loads(batch_describe_type_configurations_response[0]["Configuration"])
+        return data
 
     def _describe_hook(self, args: Namespace) -> None:
         """
