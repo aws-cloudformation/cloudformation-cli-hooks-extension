@@ -959,14 +959,15 @@ class TestGetTypeConfigurationData:
             "UnprocessedTypeConfigurations": [],
             "TypeConfigurations": []
         })
-        with Stubber(extension._cfn_client) as stubber, pytest.raises(Exception) as e:
+        expected = { "CloudFormationConfiguration":{"HookConfiguration":{"TargetStacks":"NONE","FailureMode":"WARN"}} }
+        with Stubber(extension._cfn_client) as stubber:
             stubber.add_response(
                 "batch_describe_type_configurations",
                 response,
                 expected_params={ "TypeConfigurationIdentifiers": [{ "Type": "HOOK", "TypeName": TEST_TYPE_NAME, "TypeConfigurationAlias": "default" }] }
             )
-            extension._get_type_configuration_data(TEST_TYPE_NAME, "default")
-        assert e.type == DownstreamError
+            output = extension._get_type_configuration_data(TEST_TYPE_NAME, "default")
+        assert output == expected
 
 class TestDescribeHook:
     def test_basic_hook(self, extension, capsys):
