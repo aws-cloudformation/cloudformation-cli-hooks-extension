@@ -45,7 +45,8 @@ class TestEntryPoint:
             (["--profile", "sandbox", "--version-id", "3"], {"region": None, "profile": "sandbox", "endpoint_url": None, "version_id": "3"}),
             (["--endpoint-url", "https://my_endpoint.my_domain",  "--version-id", "4"],
                 {"region": None, "profile": None, "endpoint_url": "https://my_endpoint.my_domain","version_id": "4"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--version-id", "5"], {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "version_id": "5"}),
+            (["--region", "us-west-2", "--profile", "sandbox", "--version-id", "5"],
+                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "version_id": "5"}),
             (["--region", "us-west-2", "--profile", "sandbox", "--endpoint-url", "https://my_endpoint.my_domain", "--version-id", "6"],
                 {"region": "us-west-2", "profile": "sandbox", "endpoint_url": "https://my_endpoint.my_domain", "version_id": "6"})
         ]
@@ -83,7 +84,7 @@ class TestSetTypeDefaultVersion:
             )
             output = extension._set_type_default_version(TEST_TYPE_NAME, "00000001")
 
-        assert output == None
+        assert output is None
 
     def test_set_type_default_version_type_not_found(self, extension):
         with Stubber(extension._cfn_client) as stubber, pytest.raises(Exception) as e:
@@ -138,4 +139,3 @@ class TestSetDefaultHookVersion:
         out, _ = capsys.readouterr()
 
         assert out == ""
-

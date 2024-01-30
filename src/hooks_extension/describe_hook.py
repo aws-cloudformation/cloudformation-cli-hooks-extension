@@ -1,5 +1,6 @@
 import json
 import logging
+import functools
 from argparse import Namespace
 from fnmatch import fnmatch
 
@@ -50,7 +51,8 @@ class DescribeHookExtension(ExtensionPlugin):
         configured_properties = hook_configuration_data["Properties"]
 
         # calc largest key length for spacing
-        max_width = max(len("Property"), max(map(len, configured_properties.keys()))) + 2
+        all_keys = list(configured_properties.keys()) + ["Property"]
+        max_width = max(len(key) for key in all_keys) + 2
         # use max_width to add spaces between key and column seperator
         output_string = "Configured properties:\n" + \
         "\t\tProperty" + " "*(max_width - len('Property')) + "| Value\n" + "\t\t" + "-"*(max_width + 10) + "\n"
@@ -103,8 +105,10 @@ class DescribeHookExtension(ExtensionPlugin):
         Determines whether the specified target handler matches the specified target filters based on target name, action, and invocation point.
 
         Parameters:
-            target_handler (dict): Must contain keys 'TargetName', 'Action', and 'InvocationPoint' which specify the target for the hook. TargetName cannot contain wildcard chars.
-            filters (dict): Specifies the target filters for the hooks. Must match spec defined here: https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/hooks-structure.html#hooks-targetfilters
+            target_handler (dict): Must contain keys 'TargetName', 'Action', and 'InvocationPoint' which specify the target for the hook.
+                TargetName cannot contain wildcard chars.
+            filters (dict): Specifies the target filters for the hooks. Must match spec defined here: 
+                https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/hooks-structure.html#hooks-targetfilters
 
         Returns:
             bool: Whether the [target_handler] matches any of the [filters].
@@ -145,10 +149,12 @@ class DescribeHookExtension(ExtensionPlugin):
 
         Parameters:
             versioned_hook_data (dict): The hook description as returned by the CloudFormation DescribeType API.
-            hook_configuration_data (dict): The hook type configuration data as returned by the CloudFormation BatchDescribeTypeConfigurations API.
+            hook_configuration_data (dict): The hook type configuration data as returned by the 
+                CloudFormation BatchDescribeTypeConfigurations API.
 
         Returns:
-            string: Formatted string of the targets for each of handlers for this hook (or "Based on the schema and target filters, this hook has no targets." if no targets).
+            string: Formatted string of the targets for each of handlers for this hook 
+                (or "Based on the schema and target filters, this hook has no targets." if no targets).
 
         e.g.
 
@@ -225,9 +231,11 @@ class DescribeHookExtension(ExtensionPlugin):
                 hook_data = self._cfn_client.describe_type(TypeName=type_name, Type="HOOK", VersionId=version_id)
         except self._cfn_client.exceptions.TypeNotFoundException as e:
             if version_id is None:
-                msg = "Describing type resulted in TypeNotFoundException. This type does not seem to exist in your account in this region. Have you registered this hook?"
+                msg = "Describing type resulted in TypeNotFoundException. \
+                    This type does not seem to exist in your account in this region. Have you registered this hook?"
             else:
-                msg = f"Describing type with version id {version_id} resulted in TypeNotFoundException. This specific version does not seem to exist in your account in this region."
+                msg = f"Describing type with version id {version_id} resulted in TypeNotFoundException. \
+                    This specific version does not seem to exist in your account in this region."
             print("\n" + msg)
             raise DownstreamError(msg) from e
         except ClientError as e:
@@ -241,26 +249,30 @@ class DescribeHookExtension(ExtensionPlugin):
 
         Parameters:
             type_name (string): The hook type name to use as a TypeConfigurationIdentifier when calling BatchDescribeTypeConfigurations.
-            type_configuration_alias (string): The hook type configuration alias to use as a TypeConfigurationIdentifier when calling BatchDescribeTypeConfigurations.
+            type_configuration_alias (string): The hook type configuration alias to use as a TypeConfigurationIdentifier 
+                when calling BatchDescribeTypeConfigurations.
 
         Returns:
             dict: The response from the BatchDescribeTypeConfigurations API.
         """
-        type_configuration_not_found_msg = "Describing type configuration resulted in TypeConfigurationNotFoundException. Have you set a type configuration for this hook?"
+        type_configuration_not_found_msg = "Describing type configuration resulted in TypeConfigurationNotFoundException. \
+            Have you set a type configuration for this hook?"
         try:
             LOG.debug("Calling BatchDescribeTypeConfigurations for %s and configuration alias %s", type_name, type_configuration_alias)
             batch_describe_type_configurations_response = self._cfn_client.batch_describe_type_configurations(
-                TypeConfigurationIdentifiers=[{"Type": "HOOK", "TypeName": type_name, "TypeConfigurationAlias": type_configuration_alias}])["TypeConfigurations"]
+                TypeConfigurationIdentifiers=[{"Type": "HOOK", "TypeName": type_name, "TypeConfigurationAlias": type_configuration_alias}])
+            type_configurations_from_response = batch_describe_type_configurations_response["TypeConfigurations"]
             LOG.debug("Successful response from BatchDescribeTypeConfigurations")
             # Nested hook config is a string, converting to json here is necessary
-            data = json.loads(batch_describe_type_configurations_response[0]["Configuration"])
+            data = json.loads(type_configurations_from_response[0]["Configuration"])
         except self._cfn_client.exceptions.TypeConfigurationNotFoundException as e:
             print("\n" + type_configuration_not_found_msg)
             raise DownstreamError(type_configuration_not_found_msg) from e
         except ClientError as e:
             raise DownstreamError from e
         except IndexError as e:
-            LOG.debug("No type configurations found. This likely means that an initial type configuration was never set. Using a substituted default type configuration", exc_info=e)
+            LOG.debug("No type configurations found. This likely means that an initial type configuration was never set. \
+                       Using a substituted default type configuration", exc_info=e)
             data = {
                 CLOUDFORMATION_CONFIGURATION_KEY: {
                     HOOK_CONFIGURATION_KEY: {
