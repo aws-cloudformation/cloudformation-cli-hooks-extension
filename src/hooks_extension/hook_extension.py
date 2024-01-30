@@ -33,4 +33,3 @@ class HookExtension(ExtensionPlugin):
 
         set_default_hook_subparser = hook_parser.add_parser(SET_DEFAULT_VERSION_COMMAND_NAME)
         setup_set_default_version_parser(set_default_hook_subparser)
-

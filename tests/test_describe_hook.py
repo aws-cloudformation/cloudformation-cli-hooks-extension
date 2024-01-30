@@ -27,6 +27,10 @@ from hooks_extension.describe_hook import (
 
 TEST_TYPE_NAME = "Random::Type::Name"
 
+@pytest.fixture
+def cfn_client():
+    return create_sdk_session().client("cloudformation")
+
 class TestEntryPoint:
     def test_command_available(self):
         patch_describe_hook = patch(
@@ -554,7 +558,7 @@ class TestBuildTargetHandlersString:
         ]
     }
 
-    def test_no_filters_one_handler_one_target(self):
+    def test_no_filters_one_handler_one_target(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -567,15 +571,13 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
         "\n\tpreDelete:"
         "\n\t\tAWS::S3::Bucket\n")
         assert output == expected
 
-    def test_no_filters_multiple_handlers_one_target(self):
+    def test_no_filters_multiple_handlers_one_target(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -592,8 +594,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
         "\n\tpreDelete:"
@@ -602,7 +602,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::S3::Bucket\n")
         assert output == expected
 
-    def test_no_filters_one_handler_multiple_target(self):
+    def test_no_filters_one_handler_multiple_target(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -615,8 +615,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
         "\n\tpreDelete:"
@@ -624,7 +622,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::SQS::Queue\n")
         assert output == expected
 
-    def test_no_filters_multiple_handlers_multiple_targets(self):
+    def test_no_filters_multiple_handlers_multiple_targets(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -641,8 +639,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
         "\n\tpreDelete:"
@@ -653,7 +649,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::SNS::Topic\n")
         assert output == expected
 
-    def test_no_filters_multiple_handlers_multiple_targets_wildcard(self):
+    def test_no_filters_multiple_handlers_multiple_targets_wildcard(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -669,8 +665,6 @@ class TestBuildTargetHandlersString:
             }
         })
         hook_configuration_data = {}
-
-        cfn_client = create_sdk_session().client("cloudformation")
 
         def mock_resolver_function(args):
             if args == ["AWS::S?::Bucket", "AWS::SQ*::Queue"]:
@@ -690,7 +684,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::SNS::Topic\n")
         assert output == expected
 
-    def test_no_filters_one_handler_max_targets(self):
+    def test_no_filters_one_handler_max_targets(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -704,15 +698,13 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
         "\n\tpreDelete:"
         "\n\t\t6 resources\n")
         assert output == expected
 
-    def test_no_filters_multiple_handler_max_targets(self):
+    def test_no_filters_multiple_handler_max_targets(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -730,8 +722,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
         "\n\tpreDelete:"
@@ -741,7 +731,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::SQS::Queue\n")
         assert output == expected
 
-    def test_filters_one_handler_one_target_match(self):
+    def test_filters_one_handler_one_target_match(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -754,7 +744,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
         hook_configuration_data["TargetFilters"] = self.filters_targets
-        cfn_client = create_sdk_session().client("cloudformation")
 
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
@@ -762,7 +751,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::S3::Bucket\n")
         assert output == expected
 
-    def test_filters_one_handler_one_target_no_match(self):
+    def test_filters_one_handler_one_target_no_match(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -775,13 +764,12 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
         hook_configuration_data["TargetFilters"] = self.filters_targets
-        cfn_client = create_sdk_session().client("cloudformation")
 
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = "Based on the schema and target filters, this hook has no targets.\n"
         assert output == expected
 
-    def test_filters_multiple_handler_one_target_mixed_match(self):
+    def test_filters_multiple_handler_one_target_mixed_match(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -798,7 +786,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
         hook_configuration_data["TargetFilters"] = self.filters_targets
-        cfn_client = create_sdk_session().client("cloudformation")
 
         output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
         expected = ("This Hook is configured to target:"
@@ -807,7 +794,7 @@ class TestBuildTargetHandlersString:
 
         assert output == expected
 
-    def test_filters_multiple_handler_multiple_target_mixed_match(self):
+    def test_filters_multiple_handler_multiple_target_mixed_match(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -828,7 +815,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
         hook_configuration_data["TargetFilters"] = self.filters_targets
-        cfn_client = create_sdk_session().client("cloudformation")
 
         def mock_resolver_function(args):
             if args == ["AWS::S3::Bucket", "AWS::DynamoDB::*"]:
@@ -847,7 +833,7 @@ class TestBuildTargetHandlersString:
         "\n\t\tAWS::DynamoDB::Table\n")
         assert output == expected
 
-    def test_handler_not_in_handler_actions_list(self):
+    def test_handler_not_in_handler_actions_list(self, cfn_client):
         versioned_hook_data = {}
         versioned_hook_data["Schema"] = json.dumps({
             "handlers":
@@ -860,7 +846,6 @@ class TestBuildTargetHandlersString:
         })
         hook_configuration_data = {}
         hook_configuration_data["TargetFilters"] = self.filters_targets
-        cfn_client = create_sdk_session().client("cloudformation")
 
         with pytest.raises(Exception) as e:
             _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
@@ -868,7 +853,7 @@ class TestBuildTargetHandlersString:
         assert e.type == InternalError
 
 class TestGetHookData:
-    def test_get_hook_data_happy(self):
+    def test_get_hook_data_happy(self, cfn_client):
         response = ({
             "Arn": "TestArn",
             "Type": "HOOK",
@@ -879,8 +864,6 @@ class TestGetHookData:
             "Schema": "Test Schema"
         })
 
-        cfn_client = create_sdk_session().client("cloudformation")
-
         with Stubber(cfn_client) as stubber:
             stubber.add_response(
                 "describe_type",
@@ -890,10 +873,7 @@ class TestGetHookData:
             output = _get_hook_data(cfn_client, TEST_TYPE_NAME)
         assert output == response
 
-    def test_get_hook_data_type_not_found(self):
-
-        cfn_client = create_sdk_session().client("cloudformation")
-
+    def test_get_hook_data_type_not_found(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "describe_type",
@@ -903,8 +883,7 @@ class TestGetHookData:
             _get_hook_data(cfn_client, TEST_TYPE_NAME)
         assert e.type == DownstreamError
 
-    def test_get_hook_data_client_error(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_get_hook_data_client_error(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "describe_type",
@@ -914,7 +893,7 @@ class TestGetHookData:
             _get_hook_data(cfn_client, TEST_TYPE_NAME)
         assert e.type == DownstreamError
 
-    def test_get_versioned_hook_data_happy(self):
+    def test_get_versioned_hook_data_happy(self, cfn_client):
         response = ({
             "Arn": "TestArn",
             "Type": "HOOK",
@@ -926,7 +905,6 @@ class TestGetHookData:
             "Schema": "Test Schema"
             })
 
-        cfn_client = create_sdk_session().client("cloudformation")
         with Stubber(cfn_client) as stubber:
             stubber.add_response(
                 "describe_type",
@@ -936,8 +914,7 @@ class TestGetHookData:
             output = _get_hook_data(cfn_client, TEST_TYPE_NAME, "00000001")
         assert output == response
 
-    def test_get_versioned_hook_data_type_not_found(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_get_versioned_hook_data_type_not_found(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "describe_type",
@@ -947,8 +924,7 @@ class TestGetHookData:
             _get_hook_data(cfn_client, TEST_TYPE_NAME,  "00000001")
         assert e.type == DownstreamError
 
-    def test_get_versioned_hook_data_client_error(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_get_versioned_hook_data_client_error(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "describe_type",
@@ -959,7 +935,7 @@ class TestGetHookData:
         assert e.type == DownstreamError
 
 class TestGetTypeConfigurationData:
-    def test_get_type_configuration_data_happy(self):
+    def test_get_type_configuration_data_happy(self, cfn_client):
         response = ({
             "Errors": [],
             "UnprocessedTypeConfigurations": [],
@@ -973,7 +949,6 @@ class TestGetTypeConfigurationData:
             ]
         })
         expected = { "CloudFormationConfiguration":{"HookConfiguration":{"TargetStacks":"NONE","FailureMode":"FAIL"}} }
-        cfn_client = create_sdk_session().client("cloudformation")
         with Stubber(cfn_client) as stubber:
             stubber.add_response(
                 "batch_describe_type_configurations",
@@ -983,8 +958,7 @@ class TestGetTypeConfigurationData:
             output = _get_type_configuration_data(cfn_client, TEST_TYPE_NAME, "default")
         assert output == expected
 
-    def test_get_type_configuration_data_configuration_not_found(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_get_type_configuration_data_configuration_not_found(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "batch_describe_type_configurations",
@@ -994,8 +968,7 @@ class TestGetTypeConfigurationData:
             _get_type_configuration_data(cfn_client, TEST_TYPE_NAME, "default")
         assert e.type == DownstreamError
 
-    def test_get_type_configuration_data_client_error(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_get_type_configuration_data_client_error(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "batch_describe_type_configurations",
@@ -1005,14 +978,13 @@ class TestGetTypeConfigurationData:
             _get_type_configuration_data(cfn_client, TEST_TYPE_NAME, "default")
         assert e.type == DownstreamError
 
-    def test_get_type_configuration_data_no_configurations(self):
+    def test_get_type_configuration_data_no_configurations(self, cfn_client):
         response = ({
             "Errors": [],
             "UnprocessedTypeConfigurations": [],
             "TypeConfigurations": []
         })
         expected = { "CloudFormationConfiguration":{"HookConfiguration":{"TargetStacks":"NONE","FailureMode":"WARN"}} }
-        cfn_client = create_sdk_session().client("cloudformation")
         with Stubber(cfn_client) as stubber:
             stubber.add_response(
                 "batch_describe_type_configurations",
@@ -1023,7 +995,7 @@ class TestGetTypeConfigurationData:
         assert output == expected
 
 class TestDescribeHook:
-    def test_basic_hook(self, capsys):
+    def test_basic_hook(self, capsys, cfn_client):
         sample_timestamp = datetime(2023, 11, 7, 22, 23, 22, 485000, tzinfo=tzutc())
         hook_data_response = ({
             "Arn": "TestArn",
@@ -1094,7 +1066,6 @@ class TestDescribeHook:
         args.endpoint_url=None
         args.version_id=None
 
-        cfn_client = create_sdk_session().client("cloudformation")
         patch_sdk = patch("boto3.session.Session.client", autospec=True, return_value = cfn_client)
 
         with patch_project, patch_sdk:
@@ -1136,7 +1107,7 @@ class TestDescribeHook:
         " Warning: This Type version hasn't been tested yet. Run TestType to test it.\n").expandtabs(2)
         assert out == expected
 
-    def test_specific_version_hook(self, capsys):
+    def test_specific_version_hook(self, capsys, cfn_client):
         sample_timestamp = datetime(2023, 11, 7, 22, 23, 22, 485000, tzinfo=tzutc())
         hook_data_response = ({
             "Arn": "TestArn",
@@ -1208,7 +1179,6 @@ class TestDescribeHook:
         args.endpoint_url=None
         args.version_id="2"
 
-        cfn_client = create_sdk_session().client("cloudformation")
         patch_sdk = patch("boto3.session.Session.client", autospec=True, return_value = cfn_client)
 
         with patch_project, patch_sdk:

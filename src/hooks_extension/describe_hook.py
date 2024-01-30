@@ -1,6 +1,5 @@
 import json
 import logging
-import functools
 from argparse import Namespace
 from fnmatch import fnmatch
 
@@ -41,7 +40,8 @@ def _build_properties_string(hook_configuration_data: dict) -> str:
     configured_properties = hook_configuration_data["Properties"]
 
     # calc largest key length for spacing
-    max_width = max(len("Property"), max(map(len, configured_properties.keys()))) + 2
+    max_property_key_length = max(map(len, configured_properties.keys()))
+    max_width = max(len("Property"), max_property_key_length) + 2
     # use max_width to add spaces between key and column seperator
     output_string = "Configured properties:\n" + \
     "\t\tProperty" + " "*(max_width - len('Property')) + "| Value\n" + "\t\t" + "-"*(max_width + 10) + "\n"
@@ -94,8 +94,10 @@ def _matches_filters(target_handler: dict, filters: dict) -> bool:
     Determines whether the specified target handler matches the specified target filters based on target name, action, and invocation point.
 
     Parameters:
-        target_handler (dict): Must contain keys 'TargetName', 'Action', and 'InvocationPoint' which specify the target for the hook. TargetName cannot contain wildcard chars.
-        filters (dict): Specifies the target filters for the hooks. Must match spec defined here: https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/hooks-structure.html#hooks-targetfilters
+        target_handler (dict): Must contain keys 'TargetName', 'Action', and 'InvocationPoint' which specify the target for the hook.
+            TargetName cannot contain wildcard chars.
+        filters (dict): Specifies the target filters for the hooks. Must match spec defined here:
+            https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/hooks-structure.html#hooks-targetfilters
 
     Returns:
         bool: Whether the [target_handler] matches any of the [filters].
@@ -140,7 +142,8 @@ def _build_target_handlers_string(cfn_client, versioned_hook_data: dict, hook_co
         hook_configuration_data (dict): The hook type configuration data as returned by the CloudFormation BatchDescribeTypeConfigurations API.
 
     Returns:
-        string: Formatted string of the targets for each of handlers for this hook (or "Based on the schema and target filters, this hook has no targets." if no targets).
+        string: Formatted string of the targets for each of handlers for this hook
+            (or "Based on the schema and target filters, this hook has no targets." if no targets).
 
     e.g.
 
@@ -218,9 +221,11 @@ def _get_hook_data(cfn_client, type_name: str, version_id: str = None) -> dict:
             hook_data = cfn_client.describe_type(TypeName=type_name, Type="HOOK", VersionId=version_id)
     except cfn_client.exceptions.TypeNotFoundException as e:
         if version_id is None:
-            msg = "Describing type resulted in TypeNotFoundException. This type does not seem to exist in your account in this region. Have you registered this hook?"
+            msg = "Describing type resulted in TypeNotFoundException. " \
+                 "This type does not seem to exist in your account in this region. Have you registered this hook?"
         else:
-            msg = f"Describing type with version id {version_id} resulted in TypeNotFoundException. This specific version does not seem to exist in your account in this region."
+            msg = f"Describing type with version id {version_id} resulted in TypeNotFoundException. " \
+                "This specific version does not seem to exist in your account in this region."
         print("\n" + msg)
         raise DownstreamError(msg) from e
     except ClientError as e:
@@ -235,12 +240,14 @@ def _get_type_configuration_data(cfn_client, type_name: str, type_configuration_
     Parameters:
         cfn_client: Boto3 session CloudFormation client.
         type_name (string): The hook type name to use as a TypeConfigurationIdentifier when calling BatchDescribeTypeConfigurations.
-        type_configuration_alias (string): The hook type configuration alias to use as a TypeConfigurationIdentifier when calling BatchDescribeTypeConfigurations.
+        type_configuration_alias (string): The hook type configuration alias to use as a TypeConfigurationIdentifier
+            when calling BatchDescribeTypeConfigurations.
 
     Returns:
         dict: The response from the BatchDescribeTypeConfigurations API.
     """
-    type_configuration_not_found_msg = "Describing type configuration resulted in TypeConfigurationNotFoundException. Have you set a type configuration for this hook?"
+    type_configuration_not_found_msg = "Describing type configuration resulted in TypeConfigurationNotFoundException. " \
+        "Have you set a type configuration for this hook?"
     try:
         LOG.debug("Calling BatchDescribeTypeConfigurations for %s and configuration alias %s", type_name, type_configuration_alias)
         batch_describe_type_configurations_response = cfn_client.batch_describe_type_configurations(
@@ -254,7 +261,8 @@ def _get_type_configuration_data(cfn_client, type_name: str, type_configuration_
     except ClientError as e:
         raise DownstreamError from e
     except IndexError as e:
-        LOG.debug("No type configurations found. This likely means that an initial type configuration was never set. Using a substituted default type configuration", exc_info=e)
+        LOG.debug("No type configurations found. This likely means that an initial type configuration was never set. " \
+                  "Using a substituted default type configuration", exc_info=e)
         data = {
             CLOUDFORMATION_CONFIGURATION_KEY: {
                 HOOK_CONFIGURATION_KEY: {

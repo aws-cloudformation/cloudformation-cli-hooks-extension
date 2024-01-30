@@ -14,6 +14,10 @@ from hooks_extension.set_default_hook_version import setup_parser, _set_default_
 
 TEST_TYPE_NAME = "Random::Type::Name"
 
+@pytest.fixture
+def cfn_client():
+    return create_sdk_session().client("cloudformation")
+
 class TestEntryPoint:
     def test_command_available(self):
         patch_set_default_hook_version = patch(
@@ -69,8 +73,7 @@ class TestCommandLineArguments:
         assert argparse_namespace.version_id == expected["version_id"]
 
 class TestSetTypeDefaultVersion:
-    def test_set_type_default_version_happy(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_set_type_default_version_happy(self, cfn_client):
         with Stubber(cfn_client) as stubber:
             stubber.add_response(
                 "set_type_default_version",
@@ -79,8 +82,7 @@ class TestSetTypeDefaultVersion:
             )
             _set_type_default_version(cfn_client, TEST_TYPE_NAME, "00000001")
 
-    def test_set_type_default_version_type_not_found(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_set_type_default_version_type_not_found(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "set_type_default_version",
@@ -90,8 +92,7 @@ class TestSetTypeDefaultVersion:
             _set_type_default_version(cfn_client, TEST_TYPE_NAME, "00001234")
         assert e.type == DownstreamError
 
-    def test_set_type_default_version_client_error(self):
-        cfn_client = create_sdk_session().client("cloudformation")
+    def test_set_type_default_version_client_error(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "set_type_default_version",
@@ -102,7 +103,7 @@ class TestSetTypeDefaultVersion:
         assert e.type == DownstreamError
 
 class TestSetDefaultHookVersion:
-    def test_set_default_hook_version_happy(self, capsys):
+    def test_set_default_hook_version_happy(self, capsys, cfn_client):
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
@@ -122,7 +123,6 @@ class TestSetDefaultHookVersion:
         args.endpoint_url=None
         args.version_id="564"
 
-        cfn_client = create_sdk_session().client("cloudformation")
         patch_sdk = patch("boto3.session.Session.client", autospec=True, return_value = cfn_client)
 
         with patch_project, patch_sdk:

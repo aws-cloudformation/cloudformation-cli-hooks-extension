@@ -15,6 +15,10 @@ from hooks_extension.configure_hook import setup_parser, _configure_hook, _set_t
 
 TEST_TYPE_NAME = "Random::Type::Name"
 
+@pytest.fixture
+def cfn_client():
+    return create_sdk_session().client("cloudformation")
+
 class TestEntryPoint:
     def test_command_available(self):
         patch_configure_hook = patch(
@@ -74,9 +78,7 @@ class TestCommandLineArguments:
         assert argparse_namespace.configuration_path == expected["configuration_path"]
 
 class TestSetTypeConfiguration:
-    def test_set_type_configuration_happy(self):
-        cfn_client = create_sdk_session().client("cloudformation")
-
+    def test_set_type_configuration_happy(self, cfn_client):
         response = ({
             "ConfigurationArn": "TestArn"
         })
@@ -90,9 +92,7 @@ class TestSetTypeConfiguration:
             output = _set_type_configuration(cfn_client, TEST_TYPE_NAME, "TestConfiguration")
         assert output == response
 
-    def test_set_type_configuration_type_not_found(self):
-        cfn_client = create_sdk_session().client("cloudformation")
-
+    def test_set_type_configuration_type_not_found(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "set_type_configuration",
@@ -102,9 +102,7 @@ class TestSetTypeConfiguration:
             _set_type_configuration(cfn_client, TEST_TYPE_NAME, "TestConfiguration")
         assert e.type == DownstreamError
 
-    def test_set_type_configuration_client_error(self):
-        cfn_client = create_sdk_session().client("cloudformation")
-
+    def test_set_type_configuration_client_error(self, cfn_client):
         with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "set_type_configuration",
@@ -115,7 +113,7 @@ class TestSetTypeConfiguration:
         assert e.type == DownstreamError
 
 class TestConfigureHook:
-    def test_configure_hook_happy(self, capsys):
+    def test_configure_hook_happy(self, capsys, cfn_client):
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
@@ -139,7 +137,6 @@ class TestConfigureHook:
         args.endpoint_url=None
         args.configuration_path= Path(__file__).resolve().parent / "test_data" / "test_configuration.json"
 
-        cfn_client = create_sdk_session().client("cloudformation")
         patch_sdk = patch("boto3.session.Session.client", autospec=True, return_value = cfn_client)
 
         with patch_project, patch_sdk:
@@ -159,7 +156,7 @@ class TestConfigureHook:
 
         assert out == expected
 
-    def test_configure_hook_no_file(self, capsys):
+    def test_configure_hook_no_file(self):
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
@@ -179,7 +176,6 @@ class TestConfigureHook:
         args.endpoint_url=None
         args.configuration_path= "random_nonexistent_path.json"
 
-        # need to patch sdk and return a stubber client to test calls to CFN
         with patch_project, pytest.raises(Exception) as e:
             _configure_hook(args)
 
