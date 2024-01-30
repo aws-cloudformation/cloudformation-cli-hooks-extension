@@ -40,9 +40,7 @@ setup(
     install_requires=["cloudformation-cli>=0.2.33"],
     entry_points={
         "rpdk.v1.extensions": [
-            "describeHook = hooks_extension.describe_hook:DescribeHookExtension",
-            "configureHook = hooks_extension.configure_hook:ConfigureHookExtension",
-            "setDefaultHook = hooks_extension.set_default_hook_version:SetDefaultHookVersionExtension",
+            "hook = hooks_extension.hook_extension:HookExtension",
         ],
     }
     # license="Apache License 2.0",
