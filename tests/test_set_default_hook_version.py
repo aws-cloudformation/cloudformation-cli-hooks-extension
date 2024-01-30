@@ -39,7 +39,8 @@ class TestEntryPoint:
             (["--profile", "sandbox", "--version-id", "3"], {"region": None, "profile": "sandbox", "endpoint_url": None, "version_id": "3"}),
             (["--endpoint-url", "https://my_endpoint.my_domain",  "--version-id", "4"],
                 {"region": None, "profile": None, "endpoint_url": "https://my_endpoint.my_domain","version_id": "4"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--version-id", "5"], {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "version_id": "5"}),
+            (["--region", "us-west-2", "--profile", "sandbox", "--version-id", "5"],
+                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "version_id": "5"}),
             (["--region", "us-west-2", "--profile", "sandbox", "--endpoint-url", "https://my_endpoint.my_domain", "--version-id", "6"],
                 {"region": "us-west-2", "profile": "sandbox", "endpoint_url": "https://my_endpoint.my_domain", "version_id": "6"})
         ]
@@ -136,4 +137,3 @@ class TestSetDefaultHookVersion:
         out, _ = capsys.readouterr()
 
         assert out == ""
-

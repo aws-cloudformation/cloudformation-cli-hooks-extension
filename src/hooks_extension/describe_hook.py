@@ -1,5 +1,6 @@
 import json
 import logging
+import functools
 from argparse import Namespace
 from fnmatch import fnmatch
 

@@ -9,11 +9,9 @@ persistent=yes
 disable=
     missing-docstring,          # not everything needs a docstring
     fixme,                      # work in progress
-    bad-continuation,           # clashes with black
     duplicate-code,             # finds dupes between tests and plugins
     too-few-public-methods,     # triggers when inheriting
-    ungrouped-imports,          # clashes with isort
-    redefined-outer-scope
+    ungrouped-imports           # clashes with isort
 
 [BASIC]
 

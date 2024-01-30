@@ -1,4 +1,4 @@
-# pylint: disable=protected-access,redefined-outer-name
+# pylint: disable=protected-access,redefined-outer-name,too-many-lines
 import json
 from datetime import datetime
 from unittest.mock import Mock, patch
@@ -6,7 +6,6 @@ from argparse import ArgumentParser
 from dateutil.tz import tzutc
 import pytest
 
-from botocore.exceptions import ClientError
 from botocore.stub import Stubber
 
 from rpdk.core.boto_helpers import create_sdk_session
@@ -864,7 +863,7 @@ class TestBuildTargetHandlersString:
         cfn_client = create_sdk_session().client("cloudformation")
 
         with pytest.raises(Exception) as e:
-            output = _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
+            _build_target_handlers_string(cfn_client, versioned_hook_data, hook_configuration_data)
 
         assert e.type == InternalError
 

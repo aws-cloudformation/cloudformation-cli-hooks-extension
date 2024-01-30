@@ -1,15 +1,9 @@
 # pylint: disable=protected-access,redefined-outer-name
-import json
-from datetime import datetime
 from unittest.mock import Mock, patch
 from argparse import ArgumentParser
-from venv import create
-from dateutil.tz import tzutc
+from pathlib import Path
 import pytest
 
-from pathlib import Path
-
-from botocore.exceptions import ClientError
 from botocore.stub import Stubber
 
 from rpdk.core.boto_helpers import create_sdk_session
@@ -42,12 +36,15 @@ class TestEntryPoint:
 @pytest.mark.parametrize(
         "args_in, expected",
         [
-            (["--region", "us-west-2", "--configuration-path", "/my/config/path"], {"region": "us-west-2", "profile": None, "endpoint_url": None, "configuration_path": "/my/config/path"}),
-            (["--profile", "sandbox", "--configuration-path", "/another/diff/path"], {"region": None, "profile": "sandbox", "endpoint_url": None, "configuration_path": "/another/diff/path"}),
+            (["--region", "us-west-2", "--configuration-path", "/my/config/path"],
+                {"region": "us-west-2", "profile": None, "endpoint_url": None, "configuration_path": "/my/config/path"}),
+            (["--profile", "sandbox", "--configuration-path", "/another/diff/path"],
+                {"region": None, "profile": "sandbox", "endpoint_url": None, "configuration_path": "/another/diff/path"}),
             (["--endpoint-url", "https://my_endpoint.my_domain", "--configuration-path", "/my/config/path"],
                 {"region": None, "profile": None, "endpoint_url": "https://my_endpoint.my_domain", "configuration_path": "/my/config/path"}),
             (["--configuration-path", "another/new/path"], {"region": None, "profile": None, "endpoint_url": None, "configuration_path": "another/new/path"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--configuration-path", "/path/here"], {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "configuration_path": "/path/here"}),
+            (["--region", "us-west-2", "--profile", "sandbox", "--configuration-path", "/path/here"],
+                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "configuration_path": "/path/here"}),
             (["--region", "us-west-2", "--profile", "sandbox", "--endpoint-url", "https://my_endpoint.my_domain", "--configuration-path", "/my/config/path"],
                 {"region": "us-west-2", "profile": "sandbox", "endpoint_url": "https://my_endpoint.my_domain", "configuration_path": "/my/config/path"})
         ]
@@ -147,7 +144,7 @@ class TestConfigureHook:
 
         with patch_project, patch_sdk:
             with Stubber(cfn_client) as stubber:
-                with open(args.configuration_path) as f:
+                with open(args.configuration_path, 'r', encoding="utf-8") as f:
                     test_configuration = f.read()
                     stubber.add_response(
                         "set_type_configuration",
@@ -162,17 +159,12 @@ class TestConfigureHook:
 
         assert out == expected
 
-
     def test_configure_hook_no_file(self, capsys):
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
             "hooks_extension.configure_hook.Project", autospec=True, return_value=mock_project
         )
-
-        response = ({
-            "ConfigurationArn": "TestArn"
-        })
 
         args = Mock(
             spec_set=[
