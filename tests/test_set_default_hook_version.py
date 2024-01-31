@@ -10,32 +10,30 @@ from rpdk.core.exceptions import DownstreamError
 from rpdk.core.project import Project
 from rpdk.core.cli import main
 
-from hooks_extension.set_default_hook_version import SetDefaultHookVersionExtension
+from hooks_extension.set_default_hook_version import setup_parser, _set_default_hook_version, _set_type_default_version
 
 TEST_TYPE_NAME = "Random::Type::Name"
 
 @pytest.fixture
-def extension():
-    set_default_hook_version_extension = SetDefaultHookVersionExtension()
-    set_default_hook_version_extension._cfn_client = create_sdk_session().client("cloudformation")
-    return set_default_hook_version_extension
+def cfn_client():
+    return create_sdk_session().client("cloudformation")
 
 class TestEntryPoint:
     def test_command_available(self):
         patch_set_default_hook_version = patch(
-            "hooks_extension.set_default_hook_version.SetDefaultHookVersionExtension._set_default_hook_version", autospec=True
+            "hooks_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
         with patch_set_default_hook_version as mock_set_default_hook_version:
-            main(args_in=["set-default-hook-version", "--version-id", "1"])
+            main(args_in=["hook", "set-default-version", "--version-id", "1"])
 
         mock_set_default_hook_version.assert_called_once()
 
     def test_command_without_required_args_fails(self):
         patch_set_default_hook_version = patch(
-            "hooks_extension.set_default_hook_version.SetDefaultHookVersionExtension._set_default_hook_version", autospec=True
+            "hooks_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
         with patch_set_default_hook_version, pytest.raises(SystemExit):
-            main(args_in=["set-default-hook-version"])
+            main(args_in=["hook", "set-default-version"])
 
 @pytest.mark.parametrize(
         "args_in, expected",
@@ -52,9 +50,9 @@ class TestEntryPoint:
         ]
     )
 class TestCommandLineArguments:
-    def test_parser(self, extension, args_in, expected):
+    def test_parser(self, args_in, expected):
         base_parser = ArgumentParser()
-        extension.setup_parser(base_parser)
+        setup_parser(base_parser)
         parsed = base_parser.parse_args(args_in)
         assert parsed.region == expected["region"]
         assert parsed.profile == expected["profile"]
@@ -63,51 +61,49 @@ class TestCommandLineArguments:
 
     def test_args_passed(self, args_in, expected):
         patch_set_default_hook_version = patch(
-            "hooks_extension.set_default_hook_version.SetDefaultHookVersionExtension._set_default_hook_version", autospec=True
+            "hooks_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
         with patch_set_default_hook_version as mock_set_default_hook_version:
-            main(args_in=["set-default-hook-version"] + args_in)
+            main(args_in=["hook", "set-default-version"] + args_in)
         mock_set_default_hook_version.assert_called_once()
-        argparse_namespace = mock_set_default_hook_version.call_args.args[1]
+        argparse_namespace = mock_set_default_hook_version.call_args.args[0]
         assert argparse_namespace.region == expected["region"]
         assert argparse_namespace.profile == expected["profile"]
         assert argparse_namespace.endpoint_url == expected["endpoint_url"]
         assert argparse_namespace.version_id == expected["version_id"]
 
 class TestSetTypeDefaultVersion:
-    def test_set_type_default_version_happy(self, extension):
-        with Stubber(extension._cfn_client) as stubber:
+    def test_set_type_default_version_happy(self, cfn_client):
+        with Stubber(cfn_client) as stubber:
             stubber.add_response(
                 "set_type_default_version",
                 {},
                 { "TypeName": TEST_TYPE_NAME, "Type":"HOOK", "VersionId": "00000001" }
             )
-            output = extension._set_type_default_version(TEST_TYPE_NAME, "00000001")
+            _set_type_default_version(cfn_client, TEST_TYPE_NAME, "00000001")
 
-        assert output is None
-
-    def test_set_type_default_version_type_not_found(self, extension):
-        with Stubber(extension._cfn_client) as stubber, pytest.raises(Exception) as e:
+    def test_set_type_default_version_type_not_found(self, cfn_client):
+        with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "set_type_default_version",
                 service_error_code="TypeNotFoundException",
                 expected_params={ "TypeName": TEST_TYPE_NAME, "Type":"HOOK", "VersionId": "00001234" }
             )
-            extension._set_type_default_version(TEST_TYPE_NAME, "00001234")
+            _set_type_default_version(cfn_client, TEST_TYPE_NAME, "00001234")
         assert e.type == DownstreamError
 
-    def test_set_type_default_version_client_error(self, extension):
-        with Stubber(extension._cfn_client) as stubber, pytest.raises(Exception) as e:
+    def test_set_type_default_version_client_error(self, cfn_client):
+        with Stubber(cfn_client) as stubber, pytest.raises(Exception) as e:
             stubber.add_client_error(
                 "set_type_default_version",
                 service_error_code="CFNRegistryException",
                 expected_params={ "TypeName": TEST_TYPE_NAME, "Type":"HOOK", "VersionId": "98765432" }
             )
-            extension._set_type_default_version(TEST_TYPE_NAME, "98765432")
+            _set_type_default_version(cfn_client, TEST_TYPE_NAME, "98765432")
         assert e.type == DownstreamError
 
 class TestSetDefaultHookVersion:
-    def test_set_default_hook_version_happy(self, extension, capsys):
+    def test_set_default_hook_version_happy(self, capsys, cfn_client):
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
@@ -127,14 +123,16 @@ class TestSetDefaultHookVersion:
         args.endpoint_url=None
         args.version_id="564"
 
-        with patch_project:
-            with Stubber(extension._cfn_client) as stubber:
+        patch_sdk = patch("boto3.session.Session.client", autospec=True, return_value = cfn_client)
+
+        with patch_project, patch_sdk:
+            with Stubber(cfn_client) as stubber:
                 stubber.add_response(
                     "set_type_default_version",
                     {},
                     { "TypeName": TEST_TYPE_NAME, "Type":"HOOK", "VersionId": "00000564" }
                 )
-                extension._set_default_hook_version(args)
+                _set_default_hook_version(args)
 
         out, _ = capsys.readouterr()
 
