@@ -23,7 +23,7 @@ def find_version(*file_paths):
 
 setup(
     name="cloudformation-cli-hooks-extension",
-    version=find_version("src", "hooks_extension", "__init__.py"),
+    version=find_version("src", "__init__.py"),
     description=__doc__,
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -39,7 +39,7 @@ setup(
     install_requires=["cloudformation-cli>=0.2.33"],
     entry_points={
         "rpdk.v1.extensions": [
-            "hook = hooks_extension.hook_extension:HookExtension",
+            "hook = hook_extension:HookExtension",
         ],
     },
     license="Apache License 2.0",

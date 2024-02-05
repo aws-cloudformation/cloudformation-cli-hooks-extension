@@ -2,9 +2,9 @@ import logging
 
 from rpdk.core.plugin_base import ExtensionPlugin
 
-from .describe_hook import setup_parser as setup_describe_parser
-from .configure_hook import setup_parser as setup_configure_parser
-from .set_default_hook_version import setup_parser as setup_set_default_version_parser
+from describe_hook import setup_parser as setup_describe_parser
+from configure_hook import setup_parser as setup_configure_parser
+from set_default_hook_version import setup_parser as setup_set_default_version_parser
 
 LOG = logging.getLogger(__name__)
 
