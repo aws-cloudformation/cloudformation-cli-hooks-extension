@@ -14,11 +14,6 @@ LOG = logging.getLogger(__name__)
 
 HOOK_COMMAND_NAME = "hook"
 
-
-CONFIGURE_COMMAND_NAME = "configure"
-SET_DEFAULT_VERSION_COMMAND_NAME = "set-default-version"
-
-
 class HookExtension(ExtensionPlugin):
     """
     A class used for adding the 'hook' command to the CFN CLI.
