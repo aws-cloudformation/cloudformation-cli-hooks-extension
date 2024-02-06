@@ -1,3 +1,6 @@
+"""
+This sub command sets the type configuration of the hook registered in your AWS account.
+"""
 import logging
 from pathlib import Path
 from argparse import Namespace
@@ -9,6 +12,8 @@ from rpdk.core.project import Project
 from rpdk.core.exceptions import DownstreamError, InvalidProjectError
 
 LOG = logging.getLogger(__name__)
+
+COMMAND_NAME = "configure"
 
 def _set_type_configuration(cfn_client, type_name: str, type_configuration_json: str) -> None:
     """
@@ -70,8 +75,9 @@ def _configure_hook(args: Namespace) -> None:
     print(f"ConfigurationArn: {set_type_config_response['ConfigurationArn']}")
 
 def setup_parser(parser):
-    parser.set_defaults(command=_configure_hook)
-    parser.add_argument("--configuration-path", help="Filepath to CloudFormation configuration json to use for the type.", required=True)
-    parser.add_argument("--profile", help="AWS profile to use.")
-    parser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
-    parser.add_argument("--region", help="AWS Region to submit the type.")
+    configure_subparser = parser.add_parser(COMMAND_NAME, description=__doc__)
+    configure_subparser.set_defaults(command=_configure_hook)
+    configure_subparser.add_argument("--configuration-path", help="Filepath to CloudFormation configuration json to use for the hook.", required=True)
+    configure_subparser.add_argument("--profile", help="AWS profile to use.")
+    configure_subparser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
+    configure_subparser.add_argument("--region", help="AWS Region to submit the type.")

@@ -13,7 +13,7 @@ from rpdk.core.exceptions import DownstreamError, InternalError
 from rpdk.core.project import Project
 from rpdk.core.cli import main
 
-from hooks_extension.describe_hook import (
+from describe_hook import (
     _build_properties_string,
     _build_stack_filters_string,
     _build_target_handlers_string,
@@ -34,7 +34,7 @@ def cfn_client():
 class TestEntryPoint:
     def test_command_available(self):
         patch_describe_hook = patch(
-            "hooks_extension.describe_hook._describe_hook", autospec=True
+            "describe_hook._describe_hook", autospec=True
         )
         with patch_describe_hook as mock_describe_hook:
             main(args_in=["hook", "describe"])
@@ -57,9 +57,9 @@ class TestEntryPoint:
     )
 class TestCommandLineArguments:
     def test_parser(self, args_in, expected):
-        base_parser = ArgumentParser()
-        setup_parser(base_parser)
-        parsed = base_parser.parse_args(args_in)
+        hook_parser = ArgumentParser()
+        setup_parser(hook_parser.add_subparsers())
+        parsed = hook_parser.parse_args(["describe"] + args_in)
         assert parsed.region == expected["region"]
         assert parsed.profile == expected["profile"]
         assert parsed.endpoint_url == expected["endpoint_url"]
@@ -67,7 +67,7 @@ class TestCommandLineArguments:
 
     def test_args_passed(self, args_in, expected):
         patch_describe_hook = patch(
-            "hooks_extension.describe_hook._describe_hook", autospec=True
+            "describe_hook._describe_hook", autospec=True
         )
         with patch_describe_hook as mock_describe_hook:
             main(args_in=["hook", "describe"] + args_in)
@@ -671,6 +671,7 @@ class TestBuildTargetHandlersString:
                 return ["AWS::S3::Bucket", "AWS::SQS::Queue"]
             if args == ["AWS::SNS::Topic", "AWS::*Formation::Stack"]:
                 return ["AWS::CloudFormation::Stack", "AWS::SNS::Topic"]
+            return []
         patch_type_resolver = patch("rpdk.core.type_name_resolver.TypeNameResolver.resolve_type_names", side_effect=mock_resolver_function)
 
         with patch_type_resolver:
@@ -821,6 +822,7 @@ class TestBuildTargetHandlersString:
                 return ["AWS::DynamoDB::GlobalTable", "AWS::DynamoDB::Table", "AWS::S3::Bucket"]
             if args == ["AWS::DynamoDB::*"]:
                 return ["AWS::DynamoDB::GlobalTable", "AWS::DynamoDB::Table"]
+            return []
         patch_type_resolver = patch("rpdk.core.type_name_resolver.TypeNameResolver.resolve_type_names", side_effect=mock_resolver_function)
 
         with patch_type_resolver:
@@ -1050,7 +1052,7 @@ class TestDescribeHook:
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
-            "hooks_extension.describe_hook.Project", autospec=True, return_value=mock_project
+            "describe_hook.Project", autospec=True, return_value=mock_project
         )
 
         args = Mock(
@@ -1163,7 +1165,7 @@ class TestDescribeHook:
         mock_project.type_name = TEST_TYPE_NAME
 
         patch_project = patch(
-            "hooks_extension.describe_hook.Project", autospec=True, return_value=mock_project
+            "describe_hook.Project", autospec=True, return_value=mock_project
         )
 
         args = Mock(

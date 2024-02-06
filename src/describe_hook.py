@@ -1,3 +1,6 @@
+"""
+This sub command provides a description of the hook registered in your AWS account.
+"""
 import json
 import logging
 from argparse import Namespace
@@ -11,6 +14,8 @@ from rpdk.core.type_name_resolver import TypeNameResolver, contains_wildcard
 from rpdk.core.boto_helpers import create_sdk_session
 
 LOG = logging.getLogger(__name__)
+
+COMMAND_NAME = "describe"
 
 CLOUDFORMATION_CONFIGURATION_KEY = "CloudFormationConfiguration"
 HOOK_CONFIGURATION_KEY = "HookConfiguration"
@@ -329,8 +334,9 @@ def _describe_hook(args: Namespace) -> None:
         print(f" Warning: {versioned_hook_data['TypeTestsStatusDescription']}")
 
 def setup_parser(parser):
-    parser.set_defaults(command=_describe_hook)
-    parser.add_argument("--version-id", help="Hook version number.")
-    parser.add_argument("--profile", help="AWS profile to use.")
-    parser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
-    parser.add_argument("--region", help="AWS Region to submit the type.")
+    describe_subparser = parser.add_parser(COMMAND_NAME, description=__doc__)
+    describe_subparser.set_defaults(command=_describe_hook)
+    describe_subparser.add_argument("--version-id", help="Hook version number.")
+    describe_subparser.add_argument("--profile", help="AWS profile to use.")
+    describe_subparser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
+    describe_subparser.add_argument("--region", help="AWS Region to submit the type.")

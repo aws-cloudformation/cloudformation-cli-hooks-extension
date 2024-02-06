@@ -1,3 +1,6 @@
+"""
+This sub command sets the default version of the hook registered in your AWS account.
+"""
 import logging
 from argparse import Namespace
 
@@ -8,6 +11,8 @@ from rpdk.core.project import Project
 from rpdk.core.exceptions import DownstreamError
 
 LOG = logging.getLogger(__name__)
+
+COMMAND_NAME = "set-default-version"
 
 def _set_type_default_version(cfn_client, type_name: str, version_id: str) -> None:
     """
@@ -56,8 +61,9 @@ def _set_default_hook_version(args: Namespace) -> None:
     _set_type_default_version(cfn_client, type_name, version_id)
 
 def setup_parser(parser):
-    parser.set_defaults(command=_set_default_hook_version)
-    parser.add_argument("--version-id", help="Version id to use as default.", required=True)
-    parser.add_argument("--profile", help="AWS profile to use.")
-    parser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
-    parser.add_argument("--region", help="AWS Region to submit the type.")
+    set_default_version_subparser = parser.add_parser(COMMAND_NAME, description=__doc__)
+    set_default_version_subparser.set_defaults(command=_set_default_hook_version)
+    set_default_version_subparser.add_argument("--version-id", help="Hook version number to use as default.", required=True)
+    set_default_version_subparser.add_argument("--profile", help="AWS profile to use.")
+    set_default_version_subparser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
+    set_default_version_subparser.add_argument("--region", help="AWS Region to submit the type.")
