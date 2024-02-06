@@ -31,8 +31,8 @@ setup(
     author_email="aws-cloudformation-developers@amazon.com",
     url="https://github.com/aws-cloudformation/cloudformation-cli-hooks-extension",
     # https://packaging.python.org/guides/packaging-namespace-packages/
-    packages=["hooks_extension"],
-    package_dir={"": "src"},
+    # packages=["cloudformation-cli-hooks-extension"],
+    # package_dir={"": ""},
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.6",
