@@ -13,4 +13,3 @@ class TestEntryPoint:
         out, err = capsys.readouterr()
         assert not err
         assert "cloudformation-cli-hooks-extension" in out
-
