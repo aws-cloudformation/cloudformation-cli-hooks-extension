@@ -57,9 +57,9 @@ class TestEntryPoint:
     )
 class TestCommandLineArguments:
     def test_parser(self, args_in, expected):
-        base_parser = ArgumentParser()
-        setup_parser(base_parser)
-        parsed = base_parser.parse_args(args_in)
+        hook_parser = ArgumentParser()
+        setup_parser(hook_parser.add_subparsers())
+        parsed = hook_parser.parse_args(["describe"] + args_in)
         assert parsed.region == expected["region"]
         assert parsed.profile == expected["profile"]
         assert parsed.endpoint_url == expected["endpoint_url"]
