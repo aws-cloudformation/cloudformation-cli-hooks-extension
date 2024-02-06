@@ -2,7 +2,7 @@
 
 The CloudFormation CLI (cfn) allows you to author your own CFN extension providers that can be used by CloudFormation.
 
-This extension library provides more commands for managing and configuring your Resource Hooks. 
+This extension library provides more commands for managing and configuring your Resource Hooks.
 
 
 ### Documentation
@@ -19,11 +19,11 @@ pip3 install cloudformation-cli-hooks-extension
 
 ### Usage
 
-All of these commands are meant to be run from inside your pre-initialized Hooks project directory. You can initialize a new project by using the `cfn init` command from the [CloudFormation CLI](https://github.com/aws-cloudformation/cloudformation-cli?tab=readme-ov-file#command-init).
+All of these commands are meant to be run from inside your pre-initialized Hooks project directory. You can initialize a new project by using the `cfn init` command from the [CloudFormation CLI](https://github.com/aws-cloudformation/cloudformation-cli?tab=readme-ov-file#command-init). All of the commands use the `cfn hook` prefix, ex. `cfn hook describe`.
 
-#### Command: describe-hook
+#### Command: describe
 
-To get more details about hook versions registered in your account, use the `describe-hook` command. This will return the following properties:
+To get more details about hook versions registered in your account, use the `describe` command. This will return the following properties:
 
 - Description
 - Created at
@@ -39,7 +39,7 @@ To get more details about hook versions registered in your account, use the `des
 The details for the default version will be returned by deafult. Optionally, the `--version-id` can be passed to describe a specific version.
 
 ```bash
-cfn describe-hook
+cfn hook describe
 ```
 
 Sample output:
@@ -76,25 +76,25 @@ Testing status: NOT_TESTED
  Warning: This Type version hasn't been tested yet. Run TestType to test it.
 ```
 
-### Command: set-default-hook-version
+### Command: set-default-version
 
-To set a specific version of your hooks as the default version, use the `set-default-hook-version` command.
+To set a specific version of your hooks as the default version, use the `set-default-version` command.
 
 ```bash
-cfn set-default-hook-version --version-id 1
+cfn hook set-default-version --version-id 1
 ```
 
-This command return nothings, but you can then use `cfn describe-hook` to check the default version set in your account.
+This command return nothings, but you can then use `cfn hook describe` to check the default version set in your account.
 
-### Command: configure-hook
+### Command: configure
 
-To set the type configuration of your hook, use the `configure-hook` command.
+To set the type configuration of your hook, use the `configure` command.
 
-You will first need to save your type configuration as a json file and then specify the file path in the command. 
+You will first need to save your type configuration as a json file and then specify the file path in the command.
 
 
 ```bash
-cfn configure-hook --configuration-path ./myHookTypeConfig.json
+cfn hook configure --configuration-path ./myHookTypeConfig.json
 ```
 
 Sample output:
