@@ -671,6 +671,7 @@ class TestBuildTargetHandlersString:
                 return ["AWS::S3::Bucket", "AWS::SQS::Queue"]
             if args == ["AWS::SNS::Topic", "AWS::*Formation::Stack"]:
                 return ["AWS::CloudFormation::Stack", "AWS::SNS::Topic"]
+            return []
         patch_type_resolver = patch("rpdk.core.type_name_resolver.TypeNameResolver.resolve_type_names", side_effect=mock_resolver_function)
 
         with patch_type_resolver:
@@ -821,6 +822,7 @@ class TestBuildTargetHandlersString:
                 return ["AWS::DynamoDB::GlobalTable", "AWS::DynamoDB::Table", "AWS::S3::Bucket"]
             if args == ["AWS::DynamoDB::*"]:
                 return ["AWS::DynamoDB::GlobalTable", "AWS::DynamoDB::Table"]
+            return []
         patch_type_resolver = patch("rpdk.core.type_name_resolver.TypeNameResolver.resolve_type_names", side_effect=mock_resolver_function)
 
         with patch_type_resolver:

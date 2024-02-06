@@ -1,7 +1,6 @@
 # pylint: disable=protected-access,redefined-outer-name
 from unittest.mock import Mock, patch
 from argparse import ArgumentParser
-from click import Argument
 import pytest
 
 from botocore.stub import Stubber
