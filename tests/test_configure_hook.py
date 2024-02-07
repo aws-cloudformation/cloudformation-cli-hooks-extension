@@ -11,7 +11,7 @@ from rpdk.core.exceptions import DownstreamError, InvalidProjectError
 from rpdk.core.project import Project
 from rpdk.core.cli import main
 
-from configure_hook import setup_parser, _configure_hook, _set_type_configuration
+from hook_extension.configure_hook import setup_parser, _configure_hook, _set_type_configuration
 
 TEST_TYPE_NAME = "Random::Type::Name"
 
@@ -22,7 +22,7 @@ def cfn_client():
 class TestEntryPoint:
     def test_command_available(self):
         patch_configure_hook = patch(
-            "configure_hook._configure_hook", autospec=True
+            "hook_extension.configure_hook._configure_hook", autospec=True
         )
         with patch_configure_hook as mock_configure_hook:
             main(args_in=["hook", "configure", "--configuration-path", "/my/config/path"])
@@ -31,7 +31,7 @@ class TestEntryPoint:
 
     def test_command_without_required_args_fails(self):
         patch_configure_hook = patch(
-            "configure_hook._configure_hook", autospec=True
+            "hook_extension.configure_hook._configure_hook", autospec=True
         )
         with patch_configure_hook, pytest.raises(SystemExit):
             main(args_in=["hook", "configure"])
@@ -65,7 +65,7 @@ class TestCommandLineArguments:
 
     def test_args_passed(self, args_in, expected):
         patch_configure_hook = patch(
-            "configure_hook._configure_hook", autospec=True
+            "hook_extension.configure_hook._configure_hook", autospec=True
         )
 
         with patch_configure_hook as mock_configure_hook:
@@ -117,7 +117,7 @@ class TestConfigureHook:
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
-            "configure_hook.Project", autospec=True, return_value=mock_project
+            "hook_extension.configure_hook.Project", autospec=True, return_value=mock_project
         )
 
         response = ({
@@ -160,7 +160,7 @@ class TestConfigureHook:
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
-            "configure_hook.Project", autospec=True, return_value=mock_project
+            "hook_extension.configure_hook.Project", autospec=True, return_value=mock_project
         )
 
         args = Mock(
