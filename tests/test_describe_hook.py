@@ -13,7 +13,7 @@ from rpdk.core.exceptions import DownstreamError, InternalError
 from rpdk.core.project import Project
 from rpdk.core.cli import main
 
-from describe_hook import (
+from hook_extension.describe_hook import (
     _build_properties_string,
     _build_stack_filters_string,
     _build_target_handlers_string,
@@ -34,7 +34,7 @@ def cfn_client():
 class TestEntryPoint:
     def test_command_available(self):
         patch_describe_hook = patch(
-            "describe_hook._describe_hook", autospec=True
+            "hook_extension.describe_hook._describe_hook", autospec=True
         )
         with patch_describe_hook as mock_describe_hook:
             main(args_in=["hook", "describe"])
@@ -67,7 +67,7 @@ class TestCommandLineArguments:
 
     def test_args_passed(self, args_in, expected):
         patch_describe_hook = patch(
-            "describe_hook._describe_hook", autospec=True
+            "hook_extension.describe_hook._describe_hook", autospec=True
         )
         with patch_describe_hook as mock_describe_hook:
             main(args_in=["hook", "describe"] + args_in)
@@ -1052,7 +1052,7 @@ class TestDescribeHook:
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
-            "describe_hook.Project", autospec=True, return_value=mock_project
+            "hook_extension.describe_hook.Project", autospec=True, return_value=mock_project
         )
 
         args = Mock(
@@ -1165,7 +1165,7 @@ class TestDescribeHook:
         mock_project.type_name = TEST_TYPE_NAME
 
         patch_project = patch(
-            "describe_hook.Project", autospec=True, return_value=mock_project
+            "hook_extension.describe_hook.Project", autospec=True, return_value=mock_project
         )
 
         args = Mock(

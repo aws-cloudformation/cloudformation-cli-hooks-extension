@@ -10,7 +10,7 @@ from rpdk.core.exceptions import DownstreamError
 from rpdk.core.project import Project
 from rpdk.core.cli import main
 
-from set_default_hook_version import setup_parser, _set_default_hook_version, _set_type_default_version
+from hook_extension.set_default_hook_version import setup_parser, _set_default_hook_version, _set_type_default_version
 
 TEST_TYPE_NAME = "Random::Type::Name"
 
@@ -21,7 +21,7 @@ def cfn_client():
 class TestEntryPoint:
     def test_command_available(self):
         patch_set_default_hook_version = patch(
-            "set_default_hook_version._set_default_hook_version", autospec=True
+            "hook_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
         with patch_set_default_hook_version as mock_set_default_hook_version:
             main(args_in=["hook", "set-default-version", "--version-id", "1"])
@@ -30,7 +30,7 @@ class TestEntryPoint:
 
     def test_command_without_required_args_fails(self):
         patch_set_default_hook_version = patch(
-            "set_default_hook_version._set_default_hook_version", autospec=True
+            "hook_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
         with patch_set_default_hook_version, pytest.raises(SystemExit):
             main(args_in=["hook", "set-default-version"])
@@ -61,7 +61,7 @@ class TestCommandLineArguments:
 
     def test_args_passed(self, args_in, expected):
         patch_set_default_hook_version = patch(
-            "set_default_hook_version._set_default_hook_version", autospec=True
+            "hook_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
         with patch_set_default_hook_version as mock_set_default_hook_version:
             main(args_in=["hook", "set-default-version"] + args_in)
@@ -107,7 +107,7 @@ class TestSetDefaultHookVersion:
         mock_project = Mock(spec=Project)
         mock_project.type_name = TEST_TYPE_NAME
         patch_project = patch(
-            "set_default_hook_version.Project", autospec=True, return_value=mock_project
+            "hook_extension.set_default_hook_version.Project", autospec=True, return_value=mock_project
         )
 
         args = Mock(
