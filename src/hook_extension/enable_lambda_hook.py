@@ -1,6 +1,7 @@
 """
 This sub command sets the type configuration of the hook registered in your AWS account.
 """
+import os
 import logging
 import json
 from argparse import Namespace
@@ -8,7 +9,7 @@ from argparse import Namespace
 from botocore.exceptions import ClientError
 
 from rpdk.core.boto_helpers import create_sdk_session
-from rpdk.core.exceptions import DownstreamError
+from rpdk.core.exceptions import DownstreamError, SysExitRecommendedError
 
 LOG = logging.getLogger(__name__)
 
@@ -16,6 +17,20 @@ COMMAND_NAME = "enable-lambda-invoker"
 
 
 def _activate_lambda_invoker(cfn_client, execution_role_arn: str, alias: str) -> None:
+    """
+    Activates the AWSSamples::LambdaInvoker::Hook 3rd party hook by calling CloudFormation ActivateType API with arguments.
+    https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ActivateType.html
+
+    Parameters:
+        cfn_client: Boto3 session CloudFormation client.
+        execution_role_arn (string): The ARN of the IAM role to be used as exeuction role for the hook.
+        alias (string): The alias type name to use in place of AWSSamples::LambdaInvoker::Hook.
+
+    Returns:
+        dict: The response from the ActivateType API.
+
+    Side effect: AWSSamples::LambdaInvoker::Hook type will be activated in AWS account.
+    """
     kwargs = {
         "TypeName": "AWSSamples::LambdaFunctionInvoker::Hook",
         "Type": "HOOK",
@@ -45,10 +60,10 @@ def _set_type_configuration(cfn_client, type_arn: str, type_configuration_json: 
     Parameters:
         cfn_client: Boto3 session CloudFormation client.
         type_arn (string): The ARN for the hook to call SetTypeConfiguration with.
-        type_configuration_json (string): The json formatted string to use as the Hook's TypeConfiguration
+        type_configuration_json (string): The json formatted string to use as the Hook's TypeConfiguration.
 
     Returns:
-        None.
+        dict: The response from the SetTypeConfiguration API.
 
     Side effect: Type configuration of hook will be updated in AWS account.
     """
@@ -64,29 +79,77 @@ def _set_type_configuration(cfn_client, type_arn: str, type_configuration_json: 
     except ClientError as e:
         raise DownstreamError from e
 
+def _build_configuration_json_string(lambda_arn, failure_mode, include_targets):
+    """
+    Builds the type configuration JSON string to use for the hook type.
+
+    Parameters:
+        lambda_arn (string): The ARN of the lambda function to invoke when this hook is invoked.
+        failure_mode (string): Failure mode of the hook. Valid options: [WARN, FAIL]
+        include_targets (string): Comma-seperated string of resource type names for this hook to target. Wildcards supported.
+
+    Returns:
+        string: JSON-formatted string of the type configuration.
+    """
+    configuration = {
+        "CloudFormationConfiguration":{
+            "HookConfiguration": {
+                "FailureMode": failure_mode if failure_mode else "FAIL",
+                "TargetStacks": "ALL",
+                "Properties":{
+                    "LambdaFunctions": [lambda_arn]
+                }
+            }
+        }
+    }
+
+    if include_targets:
+        configuration["CloudFormationConfiguration"]["HookConfiguration"]["TargetFilters"] = {
+            "TargetNames": list(map(str.strip, include_targets.split(','))),
+            "Actions": [
+                "CREATE",
+                "UPDATE"
+            ],
+            "InvocationPoints": [
+                "PRE_PROVISION"
+            ]
+        }
+
+    return json.dumps(configuration)
+
+
 def _enable_lambda_invoker(args: Namespace) -> None:
     """
-    Main method for the hook enable-lambda-invoker command. Uses file path specified to set the type configuration of the Hook in AWS.
+    Main method for the hook enable-lambda-invoker command.
 
+    Parameters:
+        args (Namespace): The arguments to use with this command.
+            Required keys in Namespace: 'lambda_arn', 'failure_mode', 'execution_role', 'alias',
+            'include_targets','profile', 'endpoint_url', 'region'. All default to None.
+
+    Returns: None.
+
+    Side effect: Success message is printed to system out.
     """
+    if not os.environ.get("CFN_CLI_HOOKS_EXPERIMENTAL") or os.environ.get("CFN_CLI_HOOKS_EXPERIMENTAL") != "enabled":
+        msg = "To enable experimental features, please specify environment variable: 'export CFN_CLI_HOOKS_EXPERIMENTAL=enabled'"
+        raise SysExitRecommendedError(msg)
+
+    if args.include_targets is None:
+        user_response = input("Without including `include-targets`, this will block all CloudFormation deployments on failure. \
+                              \nDo you wish to proceed? [y/n]\n")
+        if user_response.lower() != "y":
+            msg = "Command aborted by user."
+            raise SysExitRecommendedError(msg)
+
     cfn_client = create_sdk_session(args.region, args.profile).client("cloudformation", endpoint_url=args.endpoint_url)
 
     lambda_hook_arn = _activate_lambda_invoker(cfn_client, args.execution_role, args.alias)["Arn"]
 
-    configuration_json = json.dumps({
-        "CloudFormationConfiguration":{
-            "HookConfiguration": {
-                "FailureMode": args.failure_mode if args.failure_mode else "FAIL",
-                "TargetStacks": "ALL",
-                "Properties":{
-                    "LambdaFunctions": [args.lambda_arn]
-                }
-            }
-        }
+    configuration_json = _build_configuration_json_string(args.lambda_arn, args.failure_mode, args.include_targets)
+    _set_type_configuration(cfn_client, lambda_hook_arn, configuration_json)
 
-    })
-
-    set_type_config_response = _set_type_configuration(cfn_client, lambda_hook_arn, configuration_json)
+    print(f"Success: {args.alias or 'AWSSamples::LambdaInvoker::Hook'} will now be invoked for CloudFormation deployments for {args.include_targets or 'ALL'} resources in {args.failure_mode or 'FAIL'} mode")
 
 def setup_parser(parser):
     enable_lambda_invoker_subparser = parser.add_parser(COMMAND_NAME, description=__doc__)
@@ -95,6 +158,7 @@ def setup_parser(parser):
     enable_lambda_invoker_subparser.add_argument("--failure-mode", help="Failure mode to configure for hook. Valid values: [WARN, FAIL]. Default is FAIL.")
     enable_lambda_invoker_subparser.add_argument("--execution-role", help="ARN of the IAM role to use for hook execution.")
     enable_lambda_invoker_subparser.add_argument("--alias", help="Alias to use for AWSSamples::LambdaFunctionInvoker::Hook")
+    enable_lambda_invoker_subparser.add_argument("--include-targets", help="Comma-seperated list of resources to target with this hook. Wildcards supported.")
     enable_lambda_invoker_subparser.add_argument("--profile", help="AWS profile to use.")
     enable_lambda_invoker_subparser.add_argument("--endpoint-url", help="CloudFormation endpoint to use.")
     enable_lambda_invoker_subparser.add_argument("--region", help="AWS Region to submit the type.")

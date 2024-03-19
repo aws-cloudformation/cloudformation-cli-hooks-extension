@@ -103,6 +103,10 @@ Sample output:
 ConfigurationArn: arn:aws:cloudformation:us-east-1:000000000000:type-configuration/hook/AWS-CloudFormation-SampleHook/default
 ```
 
+## Experimental Commands
+
+To enable experimental commands: you can set
+
 
 ## Development
 
