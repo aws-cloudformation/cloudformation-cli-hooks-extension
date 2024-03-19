@@ -35,31 +35,36 @@ class TestEntryPoint:
         with patch_set_default_hook_version, pytest.raises(SystemExit):
             main(args_in=["hook", "set-default-version"])
 
-@pytest.mark.parametrize(
-        "args_in, expected",
-        [
-            (["--version-id", "1"], {"region": None, "profile": None, "endpoint_url": None, "version_id": "1"}),
-            (["--region", "us-west-2", "--version-id", "2"], {"region": "us-west-2", "profile": None, "endpoint_url": None, "version_id": "2"}),
-            (["--profile", "sandbox", "--version-id", "3"], {"region": None, "profile": "sandbox", "endpoint_url": None, "version_id": "3"}),
-            (["--endpoint-url", "https://my_endpoint.my_domain",  "--version-id", "4"],
-                {"region": None, "profile": None, "endpoint_url": "https://my_endpoint.my_domain","version_id": "4"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--version-id", "5"],
-                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "version_id": "5"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--endpoint-url", "https://my_endpoint.my_domain", "--version-id", "6"],
-                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": "https://my_endpoint.my_domain", "version_id": "6"})
-        ]
-    )
+@pytest.mark.parametrize("region", [None, "us-west-2", "ca-west-1"])
+@pytest.mark.parametrize("profile", [None, "sandbox"])
+@pytest.mark.parametrize("endpoint_url", [None, "https://my_endpoint.my_domain"])
+@pytest.mark.parametrize("version_id", ["00000001", "4"])
 class TestCommandLineArguments:
-    def test_parser(self, args_in, expected):
+    def test_parser(self, region, profile, endpoint_url, version_id):
         hook_parser = ArgumentParser()
         setup_parser(hook_parser.add_subparsers())
-        parsed = hook_parser.parse_args(["set-default-version"] + args_in)
-        assert parsed.region == expected["region"]
-        assert parsed.profile == expected["profile"]
-        assert parsed.endpoint_url == expected["endpoint_url"]
-        assert parsed.version_id == expected["version_id"]
 
-    def test_args_passed(self, args_in, expected):
+        args_in = []
+        for arg_name in ['region', 'profile', 'endpoint_url', 'version_id']:
+            arg_value = locals()[arg_name]
+            if arg_value is not None:
+                args_in.append('--' + arg_name.replace('_', '-'))
+                args_in.append(arg_value)
+
+        parsed = hook_parser.parse_args(["set-default-version"] + args_in)
+        assert parsed.region == region
+        assert parsed.profile == profile
+        assert parsed.endpoint_url == endpoint_url
+        assert parsed.version_id == version_id
+
+    def test_args_passed(self, region, profile, endpoint_url, version_id):
+        args_in = []
+        for arg_name in ['region', 'profile', 'endpoint_url', 'version_id']:
+            arg_value = locals()[arg_name]
+            if arg_value is not None:
+                args_in.append('--' + arg_name.replace('_', '-'))
+                args_in.append(arg_value)
+
         patch_set_default_hook_version = patch(
             "hook_extension.set_default_hook_version._set_default_hook_version", autospec=True
         )
@@ -67,10 +72,10 @@ class TestCommandLineArguments:
             main(args_in=["hook", "set-default-version"] + args_in)
         mock_set_default_hook_version.assert_called_once()
         argparse_namespace = mock_set_default_hook_version.call_args.args[0]
-        assert argparse_namespace.region == expected["region"]
-        assert argparse_namespace.profile == expected["profile"]
-        assert argparse_namespace.endpoint_url == expected["endpoint_url"]
-        assert argparse_namespace.version_id == expected["version_id"]
+        assert argparse_namespace.region == region
+        assert argparse_namespace.profile == profile
+        assert argparse_namespace.endpoint_url == endpoint_url
+        assert argparse_namespace.version_id == version_id
 
 class TestSetTypeDefaultVersion:
     def test_set_type_default_version_happy(self, cfn_client):

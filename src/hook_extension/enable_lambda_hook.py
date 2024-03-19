@@ -13,31 +13,30 @@ from rpdk.core.exceptions import DownstreamError, SysExitRecommendedError
 
 LOG = logging.getLogger(__name__)
 
-COMMAND_NAME = "enable-lambda-invoker"
+COMMAND_NAME = "enable-lambda-function-invoker"
 
 
-def _activate_lambda_invoker(cfn_client, execution_role_arn: str, alias: str) -> None:
+def _activate_lambda_function_invoker(cfn_client, execution_role_arn: str, alias: str) -> None:
     """
-    Activates the AWSSamples::LambdaInvoker::Hook 3rd party hook by calling CloudFormation ActivateType API with arguments.
+    Activates the AWSSamples::LambdaFunctionInvoker::Hook 3rd party hook by calling CloudFormation ActivateType API with arguments.
     https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ActivateType.html
 
     Parameters:
         cfn_client: Boto3 session CloudFormation client.
         execution_role_arn (string): The ARN of the IAM role to be used as exeuction role for the hook.
-        alias (string): The alias type name to use in place of AWSSamples::LambdaInvoker::Hook.
+        alias (string): The alias type name to use in place of AWSSamples::LambdaFunctionInvoker::Hook.
 
     Returns:
         dict: The response from the ActivateType API.
 
-    Side effect: AWSSamples::LambdaInvoker::Hook type will be activated in AWS account.
+    Side effect: AWSSamples::LambdaFunctionInvoker::Hook type will be activated in AWS account.
     """
     kwargs = {
         "TypeName": "AWSSamples::LambdaFunctionInvoker::Hook",
         "Type": "HOOK",
-        "PublisherId": "096debcd443a84c983955f8f8476c221b2b08d8b"
+        "PublisherId": "096debcd443a84c983955f8f8476c221b2b08d8b",
+        "ExecutionRoleArn": execution_role_arn
     }
-    if execution_role_arn:
-        kwargs["ExecutionRoleArn"] = execution_role_arn
     if alias:
         kwargs["TypeNameAlias"] = alias
     LOG.debug("Calling ActivateType with input: %s", kwargs)
@@ -79,12 +78,12 @@ def _set_type_configuration(cfn_client, type_arn: str, type_configuration_json: 
     except ClientError as e:
         raise DownstreamError from e
 
-def _build_configuration_json_string(lambda_arn, failure_mode, include_targets):
+def _build_configuration_json_string(lambda_function_arn, failure_mode, include_targets):
     """
     Builds the type configuration JSON string to use for the hook type.
 
     Parameters:
-        lambda_arn (string): The ARN of the lambda function to invoke when this hook is invoked.
+        lambda_function_arn (string): The ARN of the lambda function to invoke when this hook is invoked.
         failure_mode (string): Failure mode of the hook. Valid options: [WARN, FAIL]
         include_targets (string): Comma-seperated string of resource type names for this hook to target. Wildcards supported.
 
@@ -97,7 +96,7 @@ def _build_configuration_json_string(lambda_arn, failure_mode, include_targets):
                 "FailureMode": failure_mode if failure_mode else "FAIL",
                 "TargetStacks": "ALL",
                 "Properties":{
-                    "LambdaFunctions": [lambda_arn]
+                    "LambdaFunctions": [lambda_function_arn]
                 }
             }
         }
@@ -118,13 +117,13 @@ def _build_configuration_json_string(lambda_arn, failure_mode, include_targets):
     return json.dumps(configuration)
 
 
-def _enable_lambda_invoker(args: Namespace) -> None:
+def _enable_lambda_function_invoker(args: Namespace) -> None:
     """
-    Main method for the hook enable-lambda-invoker command.
+    Main method for the hook enable-lambda-function-invoker command.
 
     Parameters:
         args (Namespace): The arguments to use with this command.
-            Required keys in Namespace: 'lambda_arn', 'failure_mode', 'execution_role', 'alias',
+            Required keys in Namespace: 'lambda_function_arn', 'failure_mode', 'execution_role_arn', 'alias',
             'include_targets','profile', 'endpoint_url', 'region'. All default to None.
 
     Returns: None.
@@ -144,20 +143,20 @@ def _enable_lambda_invoker(args: Namespace) -> None:
 
     cfn_client = create_sdk_session(args.region, args.profile).client("cloudformation", endpoint_url=args.endpoint_url)
 
-    lambda_hook_arn = _activate_lambda_invoker(cfn_client, args.execution_role, args.alias)["Arn"]
+    lambda_hook_arn = _activate_lambda_function_invoker(cfn_client, args.execution_role_arn, args.alias)["Arn"]
 
-    configuration_json = _build_configuration_json_string(args.lambda_arn, args.failure_mode, args.include_targets)
+    configuration_json = _build_configuration_json_string(args.lambda_function_arn, args.failure_mode, args.include_targets)
     _set_type_configuration(cfn_client, lambda_hook_arn, configuration_json)
 
-    print(f"Success: {args.alias or 'AWSSamples::LambdaInvoker::Hook'} will now be invoked " +
+    print(f"Success: {args.alias or 'AWSSamples::LambdaFunctionInvoker::Hook'} will now be invoked " \
             f"for CloudFormation deployments for {args.include_targets or 'ALL'} resources in {args.failure_mode or 'FAIL'} mode.")
 
 def setup_parser(parser):
     enable_lambda_invoker_subparser = parser.add_parser(COMMAND_NAME, description=__doc__)
-    enable_lambda_invoker_subparser.set_defaults(command=_enable_lambda_invoker)
-    enable_lambda_invoker_subparser.add_argument("--lambda-arn", help="Lambda function ARN to use for the hook.", required=True)
+    enable_lambda_invoker_subparser.set_defaults(command=_enable_lambda_function_invoker)
+    enable_lambda_invoker_subparser.add_argument("--lambda-function-arn", help="Lambda function ARN to use for the hook.", required=True)
+    enable_lambda_invoker_subparser.add_argument("--execution-role-arn", help="ARN of the IAM role to use for hook execution.", required=True)
     enable_lambda_invoker_subparser.add_argument("--failure-mode", help="Failure mode to configure for hook. Valid values: [WARN, FAIL]. Default is FAIL.")
-    enable_lambda_invoker_subparser.add_argument("--execution-role", help="ARN of the IAM role to use for hook execution.")
     enable_lambda_invoker_subparser.add_argument("--alias", help="Alias to use for AWSSamples::LambdaFunctionInvoker::Hook")
     enable_lambda_invoker_subparser.add_argument("--include-targets", help="Comma-seperated list of resources to target with this hook. Wildcards supported.")
     enable_lambda_invoker_subparser.add_argument("--profile", help="AWS profile to use.")

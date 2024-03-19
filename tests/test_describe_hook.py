@@ -41,31 +41,36 @@ class TestEntryPoint:
 
         mock_describe_hook.assert_called_once()
 
-@pytest.mark.parametrize(
-        "args_in, expected",
-        [
-            ([], {"region": None, "profile": None, "endpoint_url": None, "version_id": None}),
-            (["--region", "us-west-2"], {"region": "us-west-2", "profile": None, "endpoint_url": None, "version_id": None}),
-            (["--profile", "sandbox"], {"region": None, "profile": "sandbox", "endpoint_url": None, "version_id": None}),
-            (["--endpoint-url", "https://my_endpoint.my_domain"],
-                {"region": None, "profile": None, "endpoint_url": "https://my_endpoint.my_domain", "version_id": None}),
-            (["--version-id", "4"], {"region": None, "profile": None, "endpoint_url": None, "version_id": "4"}),
-            (["--region", "us-west-2", "--profile", "sandbox"], {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "version_id": None}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--endpoint-url", "https://my_endpoint.my_domain", "--version-id", "4"],
-                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": "https://my_endpoint.my_domain", "version_id": "4"})
-        ]
-    )
+@pytest.mark.parametrize("region", [None, "us-west-2", "ca-west-1"])
+@pytest.mark.parametrize("profile", [None, "sandbox"])
+@pytest.mark.parametrize("endpoint_url", [None, "https://my_endpoint.my_domain"])
+@pytest.mark.parametrize("version_id", [None, "4"])
 class TestCommandLineArguments:
-    def test_parser(self, args_in, expected):
+    def test_parser(self, region, profile, endpoint_url, version_id):
         hook_parser = ArgumentParser()
         setup_parser(hook_parser.add_subparsers())
-        parsed = hook_parser.parse_args(["describe"] + args_in)
-        assert parsed.region == expected["region"]
-        assert parsed.profile == expected["profile"]
-        assert parsed.endpoint_url == expected["endpoint_url"]
-        assert parsed.version_id == expected["version_id"]
 
-    def test_args_passed(self, args_in, expected):
+        args_in = []
+        for arg_name in ['region', 'profile', 'endpoint_url', 'version_id']:
+            arg_value = locals()[arg_name]
+            if arg_value is not None:
+                args_in.append('--' + arg_name.replace('_', '-'))
+                args_in.append(arg_value)
+
+        parsed = hook_parser.parse_args(["describe"] + args_in)
+        assert parsed.region == region
+        assert parsed.profile == profile
+        assert parsed.endpoint_url == endpoint_url
+        assert parsed.version_id == version_id
+
+    def test_args_passed(self, region, profile, endpoint_url, version_id):
+        args_in = []
+        for arg_name in ['region', 'profile', 'endpoint_url', 'version_id']:
+            arg_value = locals()[arg_name]
+            if arg_value is not None:
+                args_in.append('--' + arg_name.replace('_', '-'))
+                args_in.append(arg_value)
+
         patch_describe_hook = patch(
             "hook_extension.describe_hook._describe_hook", autospec=True
         )
@@ -73,10 +78,10 @@ class TestCommandLineArguments:
             main(args_in=["hook", "describe"] + args_in)
         mock_describe_hook.assert_called_once()
         argparse_namespace = mock_describe_hook.call_args.args[0]
-        assert argparse_namespace.region == expected["region"]
-        assert argparse_namespace.profile == expected["profile"]
-        assert argparse_namespace.endpoint_url == expected["endpoint_url"]
-        assert argparse_namespace.version_id == expected["version_id"]
+        assert argparse_namespace.region == region
+        assert argparse_namespace.profile == profile
+        assert argparse_namespace.endpoint_url == endpoint_url
+        assert argparse_namespace.version_id == version_id
 
 class TestBuildPropertiesString:
     def test_no_properties(self):
