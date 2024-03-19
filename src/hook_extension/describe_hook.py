@@ -185,8 +185,8 @@ def _build_target_handlers_string(cfn_client, versioned_hook_data: dict, hook_co
                     _matches_filters(
                         {
                             "TargetName": targetName,
-                            "Action": action,
-                            "InvocationPoint": invocation_point
+                            "Action": action, # pylint: disable=cell-var-from-loop
+                            "InvocationPoint": invocation_point # pylint: disable=cell-var-from-loop
                         },
                         hook_configuration_data["TargetFilters"]
                     ),
