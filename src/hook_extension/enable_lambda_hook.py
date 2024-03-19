@@ -149,7 +149,8 @@ def _enable_lambda_invoker(args: Namespace) -> None:
     configuration_json = _build_configuration_json_string(args.lambda_arn, args.failure_mode, args.include_targets)
     _set_type_configuration(cfn_client, lambda_hook_arn, configuration_json)
 
-    print(f"Success: {args.alias or 'AWSSamples::LambdaInvoker::Hook'} will now be invoked for CloudFormation deployments for {args.include_targets or 'ALL'} resources in {args.failure_mode or 'FAIL'} mode")
+    print(f"Success: {args.alias or 'AWSSamples::LambdaInvoker::Hook'} will now be invoked " +
+            f"for CloudFormation deployments for {args.include_targets or 'ALL'} resources in {args.failure_mode or 'FAIL'} mode.")
 
 def setup_parser(parser):
     enable_lambda_invoker_subparser = parser.add_parser(COMMAND_NAME, description=__doc__)

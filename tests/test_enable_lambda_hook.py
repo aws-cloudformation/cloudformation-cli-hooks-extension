@@ -360,7 +360,7 @@ class TestEnableLambdaInvoker:
 
         out, _ = capsys.readouterr()
 
-        expected = "Success: AWSSamples::LambdaInvoker::Hook will now be invoked for CloudFormation deployments for ALL resources in FAIL mode\n"
+        expected = "Success: AWSSamples::LambdaInvoker::Hook will now be invoked for CloudFormation deployments for ALL resources in FAIL mode.\n"
 
         assert out == expected
 
@@ -434,6 +434,6 @@ class TestEnableLambdaInvoker:
                 _enable_lambda_invoker(args)
 
         out, _ = capsys.readouterr()
-        expected = "Success: AWSSamples::LambdaInvoker::Hook will now be invoked for CloudFormation deployments for AWS::SQS::Queue,AWS::Cloud*::* resources in FAIL mode\n"
+        expected = "Success: AWSSamples::LambdaInvoker::Hook will now be invoked for CloudFormation deployments for AWS::SQS::Queue,AWS::Cloud*::* resources in FAIL mode.\n"
 
         assert out == expected

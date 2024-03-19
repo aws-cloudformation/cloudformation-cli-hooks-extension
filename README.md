@@ -36,7 +36,7 @@ To get more details about hook versions registered in your account, use the `des
 - Target types
 - Testing status
 
-The details for the default version will be returned by deafult. Optionally, the `--version-id` can be passed to describe a specific version.
+The details for the default version will be returned by default. Optionally, the `--version-id` can be passed to describe a specific version.
 
 ```bash
 cfn hook describe
@@ -105,7 +105,29 @@ ConfigurationArn: arn:aws:cloudformation:us-east-1:000000000000:type-configurati
 
 ## Experimental Commands
 
-To enable experimental commands: you can set
+To enable experimental commands: you can set the environment variable: `export CFN_CLI_HOOKS_EXPERIMENTAL=enabled`.
+
+### Command: enable-lambda-invoker
+
+To activate and set the type configuration of the `AWSSamples::LambdaInvoker::Hook` 3rd party hook, use the `enable-lambda-invoker` command.
+
+This hook will invoke the lambda that is passed as the `lambda-arn` argument. Optionally, `failure-mode`, `execution-role-arn`, `alias`, and `include-targets` can all be specified with the following behavior:
+
+- `failure-mode` changes the failure mode to either `FAIL` or `WARN` (Default is `FAIL`).
+- `execution-role-arn` changes the execution role for this hook to use during runtime (Default is the role used to activate the type).
+- `alias` changes the type name for this hook in your account. For example, this can be used to change `AWSSamples::LambdaInvoker::Hook` to `MyCompany::MyOrganization::S3BucketCheckHook`. Note: If `alias` is specified, `execution-role-arn` must also be specified.
+- `include-targets` filters the targets (resource types) for which this hook will be invoked. This can be passed as a comma-seperated string (ex. `--include-targets "AWS::S3::*,AWS::DynamoDb::Table"`). (Default is ALL resource types)
+
+Note: This command does not need to be run from inside an a pre-initialized Hooks project directory.
+
+```bash
+cfn hook enable-lambda-invoker --lambda-arn arn:aws:lambda:us-east-2:123456789012:function:my-function:1
+```
+
+Sample output:
+```
+Success: AWSSamples::LambdaInvoker::Hook will now be invoked for CloudFormation deployments for ALL resources in FAIL mode.
+```
 
 
 ## Development
