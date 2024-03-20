@@ -119,7 +119,9 @@ Optionally, `--failure-mode`, `--alias`, and `--include-targets` can all be spec
 - `--alias` changes the type name for this hook in your account. For example, this can be used to change `AWSSamples::LambdaFunctionInvoker::Hook` to `MyCompany::MyOrganization::S3BucketCheckHook`.
 - `--include-targets` filters the targets (resource types) for which this hook will be invoked. This can be passed as a comma-separated string (for example, `--include-targets "AWS::S3::*,AWS::DynamoDB::Table"`) (Default is ALL resource types).
 
-See the following example of how to run the `enable-lambda-function-invoker` command; note that you don't need to run this command from inside an existing Hook's project directory:
+Note: Unlike the others, you do not need to run this command from inside an existing Hooks project directory.
+
+See the following example of how to run the `enable-lambda-function-invoker` command; note that the `--region` argument needs to be passed here if the default region configured in your AWS CLI is **not** set to `us-east-2` (the same region in which the Lambda function exists).
 
 ```bash
 cfn hook enable-lambda-function-invoker \
