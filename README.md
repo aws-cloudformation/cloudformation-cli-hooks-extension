@@ -36,7 +36,7 @@ To get more details about hook versions registered in your account, use the `des
 - Target types
 - Testing status
 
-The details for the default version will be returned by deafult. Optionally, the `--version-id` can be passed to describe a specific version.
+The details for the default version will be returned by default. Optionally, the `--version-id` can be passed to describe a specific version.
 
 ```bash
 cfn hook describe
@@ -101,6 +101,37 @@ Sample output:
 
 ```
 ConfigurationArn: arn:aws:cloudformation:us-east-1:000000000000:type-configuration/hook/AWS-CloudFormation-SampleHook/default
+```
+
+## Experimental Commands
+
+To enable experimental commands: you will need to set the environment variable `CFN_CLI_HOOKS_EXPERIMENTAL` to `enabled`. Example for the Bash shell: `export CFN_CLI_HOOKS_EXPERIMENTAL=enabled`.
+
+### Command: enable-lambda-function-invoker
+
+To activate and set the type configuration of the `AWSSamples::LambdaFunctionInvoker::Hook`third-party [hook](https://github.com/aws-cloudformation/aws-cloudformation-samples/tree/main/hooks/python-hooks/lambda-function-invoker) in your AWS account, use the `enable-lambda-function-invoker` command.
+
+This hook will use the IAM role that you pass to `--execution-role-arn` to invoke the Lambda function that you pass to the `--lambda-function-arn` argument. Make sure the Lambda function is in the same region as the hook that you're activating; the Lambda function can also be in another account (but still, it needs to be in the same region as the hook). Ensure that the execution role IAM policy and the Lambda resource policy have been configured accordingly.
+
+Optionally, `--failure-mode`, `--alias`, and `--include-targets` can all be specified with the following behavior:
+
+- `--failure-mode` changes the failure mode to either `FAIL` or `WARN` (Default is `FAIL`).
+- `--alias` changes the type name for this hook in your account. For example, this can be used to change `AWSSamples::LambdaFunctionInvoker::Hook` to `MyCompany::MyOrganization::S3BucketCheckHook`.
+- `--include-targets` filters the targets (resource types) for which this hook will be invoked. This can be passed as a comma-separated string (for example, `--include-targets "AWS::S3::*,AWS::DynamoDB::Table"`) (Default is ALL resource types).
+
+Note: Unlike the others, you do not need to run this command from inside an existing Hooks project directory.
+
+See the following example of how to run the `enable-lambda-function-invoker` command; note that the `--region` argument needs to be passed here if the default region configured in your AWS CLI is **not** set to `us-east-2` (the same region in which the Lambda function exists).
+
+```bash
+cfn hook enable-lambda-function-invoker \
+--lambda-function-arn arn:aws:lambda:us-east-2:123456789012:function:my-function:1 \
+--execution-role-arn arn:aws:iam::123456789012:role/ExampleRole
+```
+
+Sample output:
+```
+Success: AWSSamples::LambdaFunctionInvoker::Hook will now be invoked for CloudFormation deployments for ALL resources in FAIL mode.
 ```
 
 

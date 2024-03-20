@@ -36,34 +36,36 @@ class TestEntryPoint:
         with patch_configure_hook, pytest.raises(SystemExit):
             main(args_in=["hook", "configure"])
 
-
-@pytest.mark.parametrize(
-        "args_in, expected",
-        [
-            (["--region", "us-west-2", "--configuration-path", "/my/config/path"],
-                {"region": "us-west-2", "profile": None, "endpoint_url": None, "configuration_path": "/my/config/path"}),
-            (["--profile", "sandbox", "--configuration-path", "/another/diff/path"],
-                {"region": None, "profile": "sandbox", "endpoint_url": None, "configuration_path": "/another/diff/path"}),
-            (["--endpoint-url", "https://my_endpoint.my_domain", "--configuration-path", "/my/config/path"],
-                {"region": None, "profile": None, "endpoint_url": "https://my_endpoint.my_domain", "configuration_path": "/my/config/path"}),
-            (["--configuration-path", "another/new/path"], {"region": None, "profile": None, "endpoint_url": None, "configuration_path": "another/new/path"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--configuration-path", "/path/here"],
-                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": None, "configuration_path": "/path/here"}),
-            (["--region", "us-west-2", "--profile", "sandbox", "--endpoint-url", "https://my_endpoint.my_domain", "--configuration-path", "/my/config/path"],
-                {"region": "us-west-2", "profile": "sandbox", "endpoint_url": "https://my_endpoint.my_domain", "configuration_path": "/my/config/path"})
-        ]
-    )
+@pytest.mark.parametrize("region", [None, "us-west-2", "ca-west-1"])
+@pytest.mark.parametrize("profile", [None, "sandbox"])
+@pytest.mark.parametrize("endpoint_url", [None, "https://my_endpoint.my_domain"])
+@pytest.mark.parametrize("configuration_path", ["/my/config/path", "another/new/path"])
 class TestCommandLineArguments:
-    def test_parser(self, args_in, expected):
+    def test_parser(self, region, profile, endpoint_url, configuration_path):
         hook_parser = ArgumentParser()
         setup_parser(hook_parser.add_subparsers())
-        parsed = hook_parser.parse_args(["configure"] + args_in)
-        assert parsed.region == expected["region"]
-        assert parsed.profile == expected["profile"]
-        assert parsed.endpoint_url == expected["endpoint_url"]
-        assert parsed.configuration_path == expected["configuration_path"]
 
-    def test_args_passed(self, args_in, expected):
+        args_in = []
+        for arg_name in ['region', 'profile', 'endpoint_url', 'configuration_path']:
+            arg_value = locals()[arg_name]
+            if arg_value is not None:
+                args_in.append('--' + arg_name.replace('_', '-'))
+                args_in.append(arg_value)
+
+        parsed = hook_parser.parse_args(["configure"] + args_in)
+        assert parsed.region == region
+        assert parsed.profile == profile
+        assert parsed.endpoint_url == endpoint_url
+        assert parsed.configuration_path == configuration_path
+
+    def test_args_passed(self, region, profile, endpoint_url, configuration_path):
+        args_in = []
+        for arg_name in ['region', 'profile', 'endpoint_url', 'configuration_path']:
+            arg_value = locals()[arg_name]
+            if arg_value is not None:
+                args_in.append('--' + arg_name.replace('_', '-'))
+                args_in.append(arg_value)
+
         patch_configure_hook = patch(
             "hook_extension.configure_hook._configure_hook", autospec=True
         )
@@ -72,10 +74,10 @@ class TestCommandLineArguments:
             main(args_in=["hook", "configure"] + args_in)
         mock_configure_hook.assert_called_once()
         argparse_namespace = mock_configure_hook.call_args.args[0]
-        assert argparse_namespace.region == expected["region"]
-        assert argparse_namespace.profile == expected["profile"]
-        assert argparse_namespace.endpoint_url == expected["endpoint_url"]
-        assert argparse_namespace.configuration_path == expected["configuration_path"]
+        assert argparse_namespace.region == region
+        assert argparse_namespace.profile == profile
+        assert argparse_namespace.endpoint_url == endpoint_url
+        assert argparse_namespace.configuration_path == configuration_path
 
 class TestSetTypeConfiguration:
     def test_set_type_configuration_happy(self, cfn_client):

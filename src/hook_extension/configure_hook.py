@@ -26,7 +26,7 @@ def _set_type_configuration(cfn_client, type_name: str, type_configuration_json:
         type_configuration_json (string): The json formatted string to use as the Hook's TypeConfiguration
 
     Returns:
-        None.
+       dict: The response from the SetTypeConfiguration API.
 
     Side effect: Type configuration of hook will be updated in AWS account.
     """
