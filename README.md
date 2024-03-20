@@ -111,17 +111,18 @@ To enable experimental commands: you will need to set the environment variable `
 
 To activate and set the type configuration of the `AWSSamples::LambdaFunctionInvoker::Hook`third-party [hook](https://github.com/aws-cloudformation/aws-cloudformation-samples/tree/main/hooks/python-hooks/lambda-function-invoker) in your AWS account, use the `enable-lambda-function-invoker` command.
 
-This hook will invoke the Lambda function that is passed to the `--lambda-function-arn` argument. Optionally, `--failure-mode`, `--execution-role-arn`, `--alias`, and `--include-targets` can all be specified with the following behavior:
+This hook will use the IAM role that you pass to `--execution-role-arn` to invoke the Lambda function that you pass to the `--lambda-function-arn` argument Optionally, `--failure-mode`, `--alias`, and `--include-targets` can all be specified with the following behavior:
 
 - `--failure-mode` changes the failure mode to either `FAIL` or `WARN` (Default is `FAIL`).
-- `--execution-role-arn` changes the execution role for this hook to use during runtime (Default is the role used to activate the type).
-- `--alias` changes the type name for this hook in your account. For example, this can be used to change `AWSSamples::LambdaFunctionInvoker::Hook` to `MyCompany::MyOrganization::S3BucketCheckHook`. Note: If `alias` is specified, `execution-role-arn` must also be specified.
-- `--include-targets` filters the targets (resource types) for which this hook will be invoked. This can be passed as a comma-separated string (ex. `--include-targets "AWS::S3::*,AWS::DynamoDB::Table"`) (Default is ALL resource types).
+- `--alias` changes the type name for this hook in your account. For example, this can be used to change `AWSSamples::LambdaFunctionInvoker::Hook` to `MyCompany::MyOrganization::S3BucketCheckHook`.
+- `--include-targets` filters the targets (resource types) for which this hook will be invoked. This can be passed as a comma-separated string (for example, `--include-targets "AWS::S3::*,AWS::DynamoDB::Table"`) (Default is ALL resource types).
 
-Note: This command does not need to be run from inside an existing Hooks project directory.
+See the following example of how to run the `enable-lambda-function-invoker` command; note that you don't need to run this command from inside an existing Hook's project directory:
 
 ```bash
-cfn hook enable-lambda-function-invoker --lambda-function-arn arn:aws:lambda:us-east-2:123456789012:function:my-function:1
+cfn hook enable-lambda-function-invoker \
+--lambda-function-arn arn:aws:lambda:us-east-2:123456789012:function:my-function:1 \
+--execution-role-arn arn:aws:iam::123456789012:role/ExampleRole
 ```
 
 Sample output:
