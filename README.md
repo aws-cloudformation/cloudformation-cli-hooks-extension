@@ -111,7 +111,9 @@ To enable experimental commands: you will need to set the environment variable `
 
 To activate and set the type configuration of the `AWSSamples::LambdaFunctionInvoker::Hook`third-party [hook](https://github.com/aws-cloudformation/aws-cloudformation-samples/tree/main/hooks/python-hooks/lambda-function-invoker) in your AWS account, use the `enable-lambda-function-invoker` command.
 
-This hook will use the IAM role that you pass to `--execution-role-arn` to invoke the Lambda function that you pass to the `--lambda-function-arn` argument Optionally, `--failure-mode`, `--alias`, and `--include-targets` can all be specified with the following behavior:
+This hook will use the IAM role that you pass to `--execution-role-arn` to invoke the Lambda function that you pass to the `--lambda-function-arn` argument. Make sure the Lambda function is in the same region as the hook that you're activating; the Lambda function can also be in another account (but still, it needs to be in the same region as the hook). Ensure that the execution role IAM policy and the Lambda resource policy have been configured accordingly.
+
+Optionally, `--failure-mode`, `--alias`, and `--include-targets` can all be specified with the following behavior:
 
 - `--failure-mode` changes the failure mode to either `FAIL` or `WARN` (Default is `FAIL`).
 - `--alias` changes the type name for this hook in your account. For example, this can be used to change `AWSSamples::LambdaFunctionInvoker::Hook` to `MyCompany::MyOrganization::S3BucketCheckHook`.
